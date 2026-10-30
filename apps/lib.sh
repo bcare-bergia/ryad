@@ -1,9 +1,13 @@
 # Shared helpers for apps/*.sh. Sourced, not executed.
+# shellcheck shell=bash
 set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 
 . /etc/os-release
+# Read by the apps/*.sh that source this file, not here.
+# shellcheck disable=SC2034
 ARCH=$(dpkg --print-architecture)   # amd64 | arm64
+# shellcheck disable=SC2034
 CODENAME=${VERSION_CODENAME:-}
 
 log() { printf '==> [%s] %s\n' "$(basename "$0" .sh)" "$*"; }

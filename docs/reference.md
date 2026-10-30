@@ -1,6 +1,6 @@
 # Reference
 
-Every command, option, setting and file, in one place. For explanations, follow the links to the guides. `ryad --help` and `ryad build --help` print the same information in the terminal.
+Every command, option, setting and file, in one place. For explanations, follow the links to the guides. `ryad --help` and `ryad build --help` print a short form of the commands and options in the terminal; the settings, environment variables and file locations below are only here.
 
 - [Commands](#commands)
 - [Options](#options)
@@ -88,7 +88,8 @@ These are fixed afterwards; use `recreate` to change them.
 | `-y`, `--yes` | don't ask for confirmation |
 | `-f`, `--force` | `rm`: stop running environments first (same as `--yes`) |
 | `-d`, `--detach` | start CMD in the background |
-| `-q`, `--quiet` | `list`: names only |
+| `-q`, `--quiet` | `list` and `apps list`: names only |
+| `-h`, `--help` | print the usage of `ryad`, or of the subcommand before it |
 
 ## Build options
 
@@ -96,7 +97,7 @@ These are fixed afterwards; use `recreate` to change them.
 
 | Option | |
 |---|---|
-| `--check` | show built vs available versions, don't build |
+| `--check` | show the available versions and whether the image's Claude Code and Claude Desktop match them, don't build. The other apps carry no version in the image, so they are listed but not compared |
 | `--refresh` | rebuild the apt layer (pull distro security updates) |
 | `--no-cache` | rebuild every layer |
 | `--code-version=V` | Claude Code: `latest`, `stable` or `X.Y.Z` |

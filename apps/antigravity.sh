@@ -6,6 +6,7 @@
 # @commands antigravity
 # @needs firefox
 # @latest curl -fsSL https://antigravity-hub-auto-updater-974169037036.us-central1.run.app/releases | jq -r '.[0].version'
+# shellcheck shell=bash
 . "$(dirname "$0")/lib.sh"
 
 RELEASES=https://antigravity-hub-auto-updater-974169037036.us-central1.run.app/releases

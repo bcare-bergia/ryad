@@ -4,7 +4,7 @@
 # sees one workspace folder and one profile; you enter it with a terminal and
 # start the apps from there.
 #
-# Copyright (c) 2026 Bertrand Care. Sustainable Use License 1.0, see LICENSE.md
+# Copyright (c) 2026 Bertrand Caré. Sustainable Use License 1.0, see LICENSE.md
 # ('ryad build --export DIR' writes it out). Provided as is, without warranty
 # or liability.
 set -euo pipefail
@@ -1003,11 +1003,23 @@ build_main() {
 
   if [ "$check" = 1 ]; then
     if podman image exists "$IMAGE_NAME:latest"; then
-      local cur_cc cur_cd
+      local cur_cc cur_cd stale=0 unchecked=""
       cur_cc=$(podman image inspect -f "{{ index .Labels \"$LBL.code-version\" }}" "$IMAGE_NAME:latest")
       cur_cd=$(podman image inspect -f "{{ index .Labels \"$LBL.desktop-version\" }}" "$IMAGE_NAME:latest")
-      printf '==> Built image %s:latest\n    Claude Code     %s\n    Claude Desktop  %s\n' "$IMAGE_NAME" "$cur_cc" "$cur_cd"
-      if [ "$cur_cc" = "$cc_v" ] && [ "$cur_cd" = "$cd_v" ]; then echo "Up to date."; else echo "Update available: run $PROG build"; fi
+      printf '==> Built image %s:latest\n' "$IMAGE_NAME"
+      if [ "$cur_cc" = "$cc_v" ]; then printf '    %-15s %-24s up to date\n' "Claude Code" "$cur_cc"
+      else printf '    %-15s %-24s -> %s\n' "Claude Code" "$cur_cc" "$cc_v"; stale=1; fi
+      if [ "$cur_cd" = "$cd_v" ]; then printf '    %-15s %-24s up to date\n' "Claude Desktop" "$cur_cd"
+      else printf '    %-15s %-24s -> %s\n' "Claude Desktop" "$cur_cd" "$cd_v"; stale=1; fi
+      # The image labels carry a version for the Claude apps only, so the rest
+      # can't be compared. Say so, rather than counting them as up to date.
+      for n in ${APP_LIST[@]+"${APP_LIST[@]}"}; do
+        printf '    %-15s %s\n' "$n" "(version not recorded in the image)"
+        unchecked+=" $n"
+      done
+      if [ "$stale" = 1 ]; then echo "Update available: run $PROG build"
+      else echo "Claude Code and Claude Desktop are up to date."; fi
+      [ -z "$unchecked" ] || echo "Not compared:$unchecked. Rebuild to get whatever they release."
     else
       echo "Image $IMAGE_NAME:latest not built yet."
     fi

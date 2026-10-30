@@ -1,1 +1,10 @@
-# Your own additions. Add package names here and re-run ./build.sh.
+# Your own additions when you build from a checkout: package names here, one or
+# several per line, then ./build.sh.
+#
+# An installed ryad has no checkout to edit, and an upgrade would replace this
+# file anyway. Keep them in a list of your own, which is merged with these:
+#   mkdir -p ~/.config/ryad/packages
+#   echo postgresql-client >> ~/.config/ryad/packages/50-mine.list
+#   ryad build
+# A file there named like a built-in list replaces it, so pick another name
+# unless that is what you want. See docs/customization.md, "Add apt packages".

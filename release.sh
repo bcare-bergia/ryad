@@ -60,9 +60,10 @@
 #     commit, and HEAD has no other vX.Y.Z tag
 #   - with --publish: HEAD has exactly one vX.Y.Z tag (the --version, if given)
 #   - the signing key and its .pub exist
-#   - ryad, bundle.sh and installer/stub.sh parse (bash -n), and pass
-#     shellcheck when it is installed
-#   - CHANGELOG.md has a non-empty "## [X.Y.Z]" section
+#   - every script that ships parses (bash -n), and passes shellcheck when
+#     it is installed (keep "shellcheck" off the start of a comment line:
+#     there it parses as a directive and silently disables the whole file)
+#   - CHANGELOG.md has a dated, non-empty "## [X.Y.Z] - YYYY-MM-DD" section
 #   - LICENSE.md, README.md and docs/ are committed (they go in the installer)
 #   - two builds come out byte for byte the same (reproducible)
 #   - tests/installer-test.sh passes: install, upgrade, damaged copy, other
@@ -103,7 +104,7 @@ cd "$(dirname "$(readlink -f "$0")")"
 die() { echo "error: $*" >&2; exit 1; }
 step() { echo "==> $*"; }
 
-key=${RYAD_SIGNING_KEY:-} publish=0 snapshot=0 precheck=0 version= tag= already_tagged=0
+key=${RYAD_SIGNING_KEY:-} publish=0 snapshot=0 precheck=0 version='' tag='' already_tagged=0
 for a in "$@"; do
   case $a in
     --snapshot) snapshot=1 ;;
@@ -178,9 +179,15 @@ step "Checks"
 for f in ryad bundle.sh installer/stub.sh tests/installer-test.sh LICENSE.md README.md CHANGELOG.md docs; do
   [ -e "$src/$f" ] || die "$f is missing from the sources${tag:+ (not committed?)}"
 done
-for f in ryad bundle.sh installer/stub.sh; do bash -n "$src/$f"; done
+# Every script that ships: the launcher, the setuser helper, and every *.sh
+# (top level, apps/, profile.d/, installer/, tests/). The ones with no shebang
+# carry a "shell=bash" directive, so shellcheck knows what it is reading.
+scripts=(ryad sbin/ryad-setuser)
+while IFS= read -r f; do scripts+=("$f"); done \
+  < <(cd "$src" && find . -name '*.sh' -type f | sed 's|^\./||' | sort)
+for f in "${scripts[@]}"; do bash -n "$src/$f"; done
 if command -v shellcheck >/dev/null; then
-  shellcheck -S warning "$src/ryad" "$src/bundle.sh" "$src/installer/stub.sh"
+  (cd "$src" && shellcheck -S warning "${scripts[@]}")
 else
   echo "    (shellcheck not installed: skipped)"
 fi
@@ -190,6 +197,12 @@ notes=$(awk -v v="$section" '
   /^## \[/ { if (show) exit; s = $2; gsub(/[][]/, "", s); show = (s == v); next }
   show' "$src/CHANGELOG.md" | sed -e '/./,$!d' | sed -e ':a' -e '/^\n*$/{$d;N;ba' -e '}')
 [ -n "$notes" ] || [ "$snapshot" = 1 ] || die "CHANGELOG.md has no '## [$version]' section, or it's empty (in the commit)"
+# A real release is dated: "## [X.Y.Z] - YYYY-MM-DD". Without this the heading
+# can ship bare, which is how 0.1.0 to 0.1.2 all went out with no date.
+if [ "$snapshot" = 0 ]; then
+  grep -qE "^## \[${version//./\\.}\] - [0-9]{4}-[0-9]{2}-[0-9]{2}[[:space:]]*$" "$src/CHANGELOG.md" \
+    || die "CHANGELOG.md: '## [$version]' needs its date: ## [$version] - $(date +%F)"
+fi
 
 # --- build (twice, to check it's reproducible) ----------------------------------------
 # build DIR: the bundle, installer and notes, into DIR.

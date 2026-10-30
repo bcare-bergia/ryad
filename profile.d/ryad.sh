@@ -1,4 +1,5 @@
 # ryad: banner for interactive login shells (ryad <name>).
+# shellcheck shell=bash
 case $- in *i*) ;; *) return 0 2>/dev/null || exit 0 ;; esac
 if [ -n "${RYAD_NAME:-}" ]; then
   printf '\033[1mryad\033[0m %s · profile %s · workspace %s\n' \

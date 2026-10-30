@@ -2,7 +2,7 @@
 # ryad @VERSION@ installer, made by release.sh. Run it with: bash ryad-installer.run
 # Installs ryad for your user (~/.local by default); see --help.
 #
-# Copyright (c) 2026 Bertrand Care. Sustainable Use License 1.0, see LICENSE.md
+# Copyright (c) 2026 Bertrand Caré. Sustainable Use License 1.0, see LICENSE.md
 # ('--extract=DIR' writes it out). Provided as is, without warranty or liability.
 #
 # After the marker line at the end of this file: a base64 tar.gz of
@@ -65,6 +65,13 @@ ask() { # QUESTION: yes or no, "no" by default
 
 prune() { # FILE: remove it, then its folders as they become empty, up to the prefix
   local d
+  # The manifest is a plain text file sitting in the prefix, so treat its lines
+  # as untrusted: a "../../.ssh/id_ed25519" in there must not reach outside.
+  # Checked on the name, not with realpath, so a symlinked prefix still works.
+  case $1 in
+    ""|/*|../*|*/../*|*/..|..)
+      note "$PROG: skipping manifest entry outside $prefix: $1"; return 0 ;;
+  esac
   rm -f "$prefix/$1"
   d=$(dirname "$prefix/$1")
   while [ "$d" != "$prefix" ] && [[ $d == "$prefix"/* ]] && rmdir "$d" 2>/dev/null; do

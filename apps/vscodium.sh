@@ -2,6 +2,7 @@
 #
 # @description VSCodium, the open-source build of VS Code
 # @commands codium
+# shellcheck shell=bash
 . "$(dirname "$0")/lib.sh"
 
 curl -fsSL https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/raw/master/pub.gpg \
