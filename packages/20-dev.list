@@ -1,0 +1,10 @@
+# Development toolchains.
+build-essential
+python3
+python3-pip
+python3-venv
+nodejs
+npm
+# R (used by RStudio). r-base-dev lets install.packages() compile from source.
+r-base
+r-base-dev

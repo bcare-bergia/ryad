@@ -1,0 +1,18 @@
+# GUI session plumbing: D-Bus, Secret Service keyring, XDG helpers, graphics, fonts.
+dbus
+gnome-keyring
+libsecret-tools
+xdg-utils
+desktop-file-utils
+shared-mime-info
+libgl1
+libegl1
+libgl1-mesa-dri
+libgbm1
+mesa-vulkan-drivers
+libayatana-appindicator3-1
+adwaita-icon-theme
+fonts-noto-core
+fonts-noto-color-emoji
+fonts-dejavu-core
+fonts-liberation

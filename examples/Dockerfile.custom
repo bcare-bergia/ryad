@@ -1,0 +1,27 @@
+# Example: your own image on top of ryad.
+#
+#   podman build -t my-ryad -f examples/Dockerfile.custom .
+#   ryad --image=my-ryad
+#
+# or make it the default for a profile:
+#   echo 'IMAGE=my-ryad' >> ~/.config/ryad/profiles/<name>/profile.conf
+#
+# Rebuild this after "ryad build" to pick up new Claude versions.
+FROM localhost/ryad:latest
+
+USER root
+
+# Extra distro packages.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends postgresql-client graphviz \
+ && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Or reuse an app script from this repository, e.g. an app you didn't enable in build.conf:
+# COPY apps/ /opt/ryad/apps/
+# RUN bash /opt/ryad/apps/vscodium.sh
+
+# Tools installed system-wide (the home directory is replaced by the profile at runtime,
+# so don't install anything under /home here).
+RUN npm install -g pnpm && npm cache clean --force
+
+USER claude

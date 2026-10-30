@@ -1,0 +1,28 @@
+# Core command-line tools.
+# One package per line (or several, space-separated). '#' starts a comment.
+# Lists are merged and de-duplicated; all files in packages/ are installed.
+ca-certificates
+curl
+wget
+gnupg
+jq
+git
+openssh-client
+ripgrep
+fd-find
+less
+nano
+vim-tiny
+sudo
+procps
+psmisc
+locales
+tzdata
+file
+tree
+unzip
+zip
+xz-utils
+zstd
+bubblewrap
+socat

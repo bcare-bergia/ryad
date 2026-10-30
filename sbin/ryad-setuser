@@ -1,0 +1,42 @@
+#!/bin/bash
+# ryad-setuser NAME: rename the sandbox user (UID/GID 1000, "claude"
+# in the image) and its group to NAME, with home /home/NAME. Run as root; the
+# entrypoint calls it through sudo at the first start of an environment.
+# usermod/groupmod can't be used: they refuse while a process of the user runs,
+# and the entrypoint itself is one. The files are rewritten in place (same
+# inode, owner and mode).
+set -euo pipefail
+ID=1000
+new=${1:-}
+die() { echo "ryad-setuser: $*" >&2; exit 1; }
+
+[[ $new =~ ^[a-z_][a-z0-9_.-]{0,31}$ ]] && [ "$new" != root ] || die "invalid user name '$new'"
+old=$(getent passwd $ID | cut -d: -f1) || die "no user with UID $ID"
+oldg=$(getent group $ID | cut -d: -f1) || die "no group with GID $ID"
+[ "$old" = "$new" ] && [ "$oldg" = "$new" ] && exit 0
+if [ "$new" != "$old" ] && getent passwd "$new" >/dev/null; then
+  die "user name '$new' is already taken in the image (UID $(id -u "$new"))"
+fi
+if [ "$new" != "$oldg" ] && getent group "$new" >/dev/null; then
+  die "group name '$new' is already taken in the image (GID $(getent group "$new" | cut -d: -f3))"
+fi
+
+rewrite() { # <file> <awk program>
+  local f=$1 tmp
+  [ -f "$f" ] || return 0
+  tmp=$(mktemp)
+  awk -F: -v OFS=: -v id=$ID -v old="$old" -v oldg="$oldg" -v new="$new" '
+    function members(s,   a, i, k, r) {
+      k = split(s, a, ","); r = ""
+      for (i = 1; i <= k; i++) r = r (i > 1 ? "," : "") (a[i] == old ? new : a[i])
+      return r
+    }
+    '"$2" "$f" > "$tmp"
+  cat "$tmp" > "$f"
+  rm -f "$tmp"
+}
+
+rewrite /etc/passwd  '$3 == id { $1 = new; $6 = "/home/" new } 1'
+rewrite /etc/shadow  '$1 == old { $1 = new } 1'
+rewrite /etc/group   'NF >= 4 { if ($3 == id) $1 = new; $4 = members($4) } 1'
+rewrite /etc/gshadow 'NF >= 4 { if ($1 == oldg) $1 = new; $3 = members($3); $4 = members($4) } 1'

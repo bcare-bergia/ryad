@@ -1,0 +1,3 @@
+# Editors. 'emacs' is the GTK build (works on Wayland via XWayland and on X11).
+# Swap for 'emacs-pgtk' if you only use Wayland and want native rendering.
+emacs

@@ -1,0 +1,34 @@
+App install scripts
+===================
+
+Each file apps/<name>.sh installs one third-party application that is not a
+plain apt package from the base distribution (it needs its own apt repository,
+a downloaded .deb, a tarball, ...). Plain distro packages belong in
+packages/*.list instead.
+
+Enable an app by adding <name> to APPS in build.conf (or --apps=...).
+claude-desktop and claude-code are always installed, in their own layers.
+
+Contract
+--------
+- Runs as root during `podman build`, with bash, from any directory.
+- Starts with `. "$(dirname "$0")/lib.sh"` for set -euo pipefail, $ARCH,
+  $CODENAME, $ID, log/die, apt_clean and set_default_handler.
+- Must work on any Debian/Ubuntu base (read /etc/os-release, never hard-code
+  a codename).
+- Version: read ${<NAME>_VERSION} where <NAME> is the app name upper-cased,
+  '-' replaced by '_' (e.g. RSTUDIO_VERSION). Treat empty or "latest" as
+  "newest available". Any FOO_VERSION=... line in build.conf is passed to app
+  scripts automatically.
+- Ends with apt_clean if it used apt.
+
+Minimal example (apps/foo.sh):
+
+    . "$(dirname "$0")/lib.sh"
+    curl -fsSL https://example.com/key.asc -o /usr/share/keyrings/foo.asc
+    echo "deb [signed-by=/usr/share/keyrings/foo.asc] https://example.com/apt stable main" \
+      > /etc/apt/sources.list.d/foo.list
+    apt-get update
+    v=${FOO_VERSION:-latest}
+    apt-get install -y --no-install-recommends "foo$([ "$v" = latest ] || echo "=$v")"
+    apt_clean

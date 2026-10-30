@@ -1,0 +1,21 @@
+# Bundle made by ./bundle.sh (dist/ryad, and dist/ryad.new while it's written).
+# Rebuild it from the sources; its version stamp is a hash of them.
+/dist/
+
+# Python (art/riad.py)
+__pycache__/
+*.py[cod]
+.venv/
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+\#*\#
+.#*
+
+# OS
+.DS_Store
+Thumbs.db

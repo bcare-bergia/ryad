@@ -1,0 +1,1170 @@
+#!/usr/bin/env bash
+# ryad: persistent, named sandbox environments (rootless Podman
+# containers) for Claude Code, Claude Desktop and editors. Each environment
+# sees one workspace folder and one profile; you enter it with a terminal and
+# start the apps from there.
+set -euo pipefail
+
+RYAD_BUNDLE=""                       # "<stamp> <date>" in a bundle made by bundle.sh
+PROG=$(basename "$0")
+SELF=${BASH_SOURCE[0]}
+# Files the image is built from. bundle.sh appends them to a copy of this
+# script, after a line holding only the marker, as a base64 tar.gz.
+BUILD_FILES="Dockerfile entrypoint.sh build.conf apps packages profile.d sbin examples"
+MARKER=__RYAD_BUILD_FILES__
+CONFIG_ROOT=${RYAD_HOME:-${XDG_CONFIG_HOME:-$HOME/.config}/ryad}
+PROFILES_DIR=$CONFIG_ROOT/profiles
+HOST_RT=${XDG_RUNTIME_DIR:-/run/user/$(id -u)}
+STABLE_DIR=$HOST_RT/ryad             # stable display paths, refreshed at each start
+DEFAULT_IMAGE=ryad:latest
+PREFIX=ryad-                         # container name = $PREFIX<name>
+LBL=org.ryad
+CUID=1000                            # UID of the user inside the image (renamed per environment)
+CRUN=/run/user/$CUID
+LOGDIR=.cache/ryad/logs              # in the profile home: output of --detach commands
+SUBCOMMANDS=" list stop rm recreate info profiles versions prune build completion help "
+ALIASES=" ls:list remove:rm delete:rm enter:enter start:enter shell:enter "   # alias:subcommand
+VALUE_OPTS=" --profile --workspace --image --display --user --hostname "
+# Options each subcommand takes (besides --help); the completion script uses it too.
+declare -A OPTS=(
+  [enter]="--profile= --workspace= --image= --display= --no-gpu --user= --hostname= --allow-unsafe-workspace --yes --detach"
+  [list]="--quiet"
+  [stop]="--all"
+  [rm]="--force --yes"
+  [recreate]="--outdated --all --profile= --workspace= --image= --display= --no-gpu --user= --hostname= --allow-unsafe-workspace --yes"
+  [info]=""
+  [profiles]="--yes"
+  [versions]="--image="
+  [prune]="--yes"
+  [build]="--check --refresh --no-cache --code-version= --desktop-version= --rstudio-version= --apps= --packages= --base-image= --image-name= --config= --context= --export="
+  [completion]=""
+  [help]=""
+)
+
+usage() {
+  cat <<USAGE
+Usage:
+  $PROG [NAME] [options] [-- CMD [ARGS...]]
+      Enter environment NAME: create it if needed, start it if stopped, and open
+      a shell in it (or run CMD). Run it again in another terminal for another
+      shell in the same environment. Start apps from the shell:
+      claude, claude-desktop, codium, rstudio, emacs, firefox.
+      Without NAME: the environment of the current folder or of the closest
+      parent folder (on --profile, if given), else a new one named after the
+      folder. A NAME that doesn't exist is only created after you confirm (or
+      with --workspace or --yes). The shell opens in the current folder when it
+      is inside the workspace.
+  $PROG [NAME] -d -- CMD [ARGS...]
+      Start CMD in the background (e.g. claude-desktop) and return. Its output
+      goes to ~/$LOGDIR/ in the profile.
+
+  $PROG list [-q]                      list environments (-q: names only)
+  $PROG info [NAME]                    settings of an environment
+  $PROG stop NAME... | --all           stop environments (kept; '$PROG NAME' restarts them)
+  $PROG rm NAME... [--force]           delete environments (profile and workspace are kept)
+  $PROG recreate NAME [options]        recreate on the current image (after '$PROG build'),
+                                      or with other settings: --profile --workspace
+                                      --image --display --no-gpu --user --hostname
+  $PROG recreate --outdated | --all    recreate several environments at once
+  $PROG profiles [list]                profiles, their environments and Claude Code login
+  $PROG profiles create NAME           create a profile, with commented profile.conf and profile.env
+  $PROG profiles edit NAME [conf|env]  edit profile.conf (default) or profile.env in \$EDITOR
+  $PROG profiles path NAME             print the profile's folder
+  $PROG profiles rm NAME... [--yes]    delete profiles: logins, settings and history (no
+                                      environment may use them)
+  $PROG versions [NAME | --image=IMG]  app versions in an environment's image (default: $DEFAULT_IMAGE)
+  $PROG prune [--yes]                  remove ryad images no container uses (except :latest)
+  $PROG build [options]                build the image (see: $PROG build --help)
+  $PROG --version                      which bundle this ryad is
+  $PROG completion bash                print the bash completion script
+                                      (add to ~/.bashrc: source <($PROG completion bash))
+
+Aliases: ls (list), remove and delete (rm), enter, start and shell (enter NAME).
+
+Options when creating an environment (fixed afterwards; use 'recreate' to change).
+Values go after = or a space: --profile=work, --profile work, -p work.
+  -p, --profile=NAME     profile: Claude logins and settings (default: default)
+  -w, --workspace=DIR    folder mounted read-write (default: current directory)
+  --image=IMAGE          image (default: $DEFAULT_IMAGE)
+  --display=MODE         auto | wayland | x11 (default: auto)
+  --user=NAME            user name inside, home /home/NAME (default: your user name, $(id -un))
+  --hostname=NAME        hostname inside (default: the environment name)
+  --no-gpu               don't pass /dev/dri into the container
+  --allow-unsafe-workspace
+                         allow / or your home directory as workspace
+Other options:
+  -y, --yes              don't ask for confirmation
+  -f, --force            rm: stop running environments first (same as --yes)
+  -d, --detach           start CMD in the background
+  -q, --quiet            list: names only
+
+Profiles live in $PROFILES_DIR/<name>/:
+  home/          the container's home directory (logins, settings, history)
+  profile.env    optional KEY=value lines, passed to shells and apps at each enter
+  profile.conf   optional settings (shell syntax):
+                   creation defaults: IMAGE=, DISPLAY_MODE=, GPU=0|1, USER_NAME=, HOST_NAME=
+                   read at each enter: PROMPT_COLORS="user=bold-green host=yellow dir=1;34"
+                   (names: black red green yellow blue magenta cyan white, bright-<color>,
+                   bold- prefix, default; or ANSI codes. Overridden by the host's
+                   RYAD_PROMPT_COLORS.)
+USAGE
+}
+
+die() { echo "$PROG: $*" >&2; exit 1; }
+note() { echo "$PROG: $*" >&2; }
+
+cname() { echo "$PREFIX$1"; }
+lbl() { printf '{{ index .Labels "%s.%s" }}' "$LBL" "$1"; }   # podman ps/images format of a label
+T=$'\t'
+
+# inspect_env NAME: load NAME's state, image ID, creation date and labels (without
+# the "$LBL." prefix) into ENV, with one podman call. Fails if NAME doesn't exist.
+declare -A ENV=()
+ENV_OF=""
+inspect_env() {
+  local out line k
+  ENV=() ENV_OF=""
+  out=$(podman container inspect -f '{{.State.Status}}{{"\n"}}{{.Image}}{{"\n"}}{{.Created.Format "2006-01-02 15:04"}}{{range $k, $v := .Config.Labels}}{{"\n"}}{{$k}}={{$v}}{{end}}' \
+    "$(cname "$1")" 2>/dev/null) || return 1
+  {
+    IFS= read -r 'ENV[state]'; IFS= read -r 'ENV[imageid]'; IFS= read -r 'ENV[created]'
+    while IFS= read -r line; do
+      k=${line%%=*}
+      if [[ $k == "$LBL".* ]]; then ENV[${k#"$LBL".}]=${line#*=}; fi
+    done
+  } <<<"$out"
+  ENV_OF=$1
+}
+exists() { inspect_env "$1"; }
+running() { inspect_env "$1" && [ "${ENV[state]}" = running ]; }
+label() { [ "$ENV_OF" = "$1" ] || inspect_env "$1" || return 1; echo "${ENV[$2]:-}"; }
+image_id() { podman image inspect -f '{{.Id}}' "$1" 2>/dev/null || true; }
+env_outdated() { [ "${ENV[imageid]}" != "$(image_id "${ENV[image]}")" ]; }   # of the loaded ENV
+
+valid_name() { [[ $1 =~ ^[a-z0-9][a-z0-9_-]*$ ]] && [[ $SUBCOMMANDS != *" $1 "* ]] && [[ $ALIASES != *" $1:"* ]]; }
+check_name() { valid_name "$1" || die "invalid environment name '$1' (lowercase letters, digits, - and _; not a subcommand)"; }
+valid_user() { [[ $1 =~ ^[a-z_][a-z0-9_.-]{0,31}$ ]] && [ "$1" != root ]; }
+valid_profile() { [[ $1 =~ ^[A-Za-z0-9_-]+$ ]]; }
+check_profile() { valid_profile "$1" || die "invalid profile name '$1' (letters, digits, - and _)"; }
+valid_host() { [[ $1 =~ ^[A-Za-z0-9][A-Za-z0-9.-]{0,62}$ ]]; }
+tilde() { case $1 in "$HOME"|"$HOME"/*) echo "~${1#"$HOME"}" ;; *) echo "$1" ;; esac; }
+confirm() { # PROMPT: ask [y/N]; exits unless the answer is yes (--yes skips the question)
+  [ "$YES" = 1 ] && return 0
+  [ -t 0 ] || die "not a terminal; use --yes"
+  read -r -p "$1 [y/N] " ans
+  [[ $ans =~ ^[Yy] ]] || die "aborted"
+}
+
+# Names of the environments ([podman ps options], e.g. -a). Containers whose
+# name doesn't match their label (a half-done recreate) are skipped.
+env_names() {
+  podman ps "$@" --filter "label=$LBL.name" --format "{{.Names}} $(lbl name)" \
+    | awk -v p="$PREFIX" '$1 == p $2 { print $2 }'
+}
+
+# env_rows: one line per environment, sorted by name, tab-separated:
+# NAME STATE PROFILE WORKSPACE IMAGE OUTDATED(0|1)
+env_rows() {
+  local c n s p w i id
+  local -A cur=()   # current image ID of each image name
+  while IFS=$'\t' read -r c n s p w i id; do
+    [ "$c" = "$PREFIX$n" ] || continue
+    [ -n "${cur["x$i"]+set}" ] || cur["x$i"]=$(image_id "$i")
+    printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$n" "$s" "$p" "$w" "$i" \
+      "$([ -n "$id" ] && [[ ${cur["x$i"]} == "$id"* ]] && echo 0 || echo 1)"
+  done < <(podman ps -a --filter "label=$LBL.name" \
+    --format "{{.Names}}$T$(lbl name)$T{{.State}}$T$(lbl profile)$T$(lbl workspace)$T$(lbl image)$T{{.ImageID}}") | sort
+}
+
+# Existing environment names close to NAME (prefix, or edit distance <= 2), comma-separated.
+similar_envs() {
+  env_names -a | awk -v t="$1" '
+    function dist(a, b,   la, lb, i, j, d, x) {
+      la = length(a); lb = length(b)
+      for (i = 0; i <= la; i++) d[i, 0] = i
+      for (j = 0; j <= lb; j++) d[0, j] = j
+      for (i = 1; i <= la; i++)
+        for (j = 1; j <= lb; j++) {
+          x = d[i-1, j-1] + (substr(a, i, 1) != substr(b, j, 1))
+          if (d[i-1, j] + 1 < x) x = d[i-1, j] + 1
+          if (d[i, j-1] + 1 < x) x = d[i, j-1] + 1
+          d[i, j] = x
+        }
+      return d[la, lb]
+    }
+    (length(t) >= 3 && (index($0, t) == 1 || index(t, $0) == 1)) || dist($0, t) <= 2 {
+      printf "%s%s", (n++ ? ", " : ""), $0
+    }'
+}
+
+# check_envs NAME...: exit, with suggestions, unless they all exist. The last
+# one is left loaded in ENV.
+check_envs() {
+  local n s ok=1
+  for n; do
+    exists "$n" && continue
+    s=$(similar_envs "$n")
+    note "no environment '$n'${s:+ (did you mean: $s?)}"; ok=0
+  done
+  [ $ok = 1 ] || exit 1
+}
+
+# find_env DIR PROFILE EXACT: set MATCH to the environment whose workspace is DIR,
+# or (EXACT=0) the one with the deepest workspace containing DIR. Only environments
+# on PROFILE count, if set.
+find_env() {
+  local dir=$1 profile=$2 exact=$3 c n p w best=-1 ties=()
+  while IFS=$'\t' read -r c n p w; do
+    [ "$c" = "$PREFIX$n" ] || continue
+    [ -z "$profile" ] || [ "$p" = "$profile" ] || continue
+    if [ "$exact" = 1 ]; then [ "$dir" = "$w" ] || continue
+    else case $dir/ in "${w%/}"/*) ;; *) continue ;; esac
+    fi
+    if [ ${#w} -gt $best ]; then best=${#w} ties=("$n"); elif [ ${#w} = $best ]; then ties+=("$n"); fi
+  done < <(podman ps -a --filter "label=$LBL.name" --format "{{.Names}}$T$(lbl name)$T$(lbl profile)$T$(lbl workspace)")
+  [ ${#ties[@]} -le 1 ] || die "several environments use this folder: ${ties[*]} (pick one: $PROG ${ties[0]}, or use --profile=)"
+  MATCH=${ties[0]:-}
+}
+
+# Settings from the profile's profile.conf (shell syntax).
+load_profile_conf() {
+  IMAGE="" DISPLAY_MODE="" GPU="" USER_NAME="" HOST_NAME="" PROMPT_COLORS=""
+  if [ -f "$PROFILES_DIR/$1/profile.conf" ]; then
+    # shellcheck disable=SC1090
+    . "$PROFILES_DIR/$1/profile.conf"
+  fi
+}
+
+# init_profile NAME: create the profile folder, with commented profile.conf and
+# profile.env templates (existing files are never overwritten).
+init_profile() {
+  local pdir=$PROFILES_DIR/$1
+  mkdir -p "$pdir/home"
+  chmod 700 "$pdir"
+  [ -e "$pdir/profile.conf" ] || cat > "$pdir/profile.conf" <<'CONF'
+# Settings for this profile's environments (shell syntax). Uncomment to use.
+# Creation defaults (read when an environment is created; after editing, run
+# 'ryad recreate NAME'). Command-line options override them.
+#IMAGE=ryad:latest
+#DISPLAY_MODE=auto            # auto | wayland | x11
+#GPU=1                        # 0: don't pass /dev/dri
+#USER_NAME=dev                # default: your user name on the host
+#HOST_NAME=work-box           # default: the environment name
+# Read at each enter: colors of the prompt's user, host and dir.
+#PROMPT_COLORS="user=bold-green host=yellow dir=bold-blue"
+CONF
+  [ -e "$pdir/profile.env" ] || cat > "$pdir/profile.env" <<'ENV'
+# KEY=value lines passed as environment variables to the shells and apps of this
+# profile's environments. Read each time you enter one: new shells see edits.
+#ANTHROPIC_API_KEY=sk-ant-...
+#CLAUDE_CODE_USE_BEDROCK=1
+#AWS_REGION=eu-west-1
+#HTTPS_PROXY=http://proxy:3128
+ENV
+}
+
+# --- display plumbing --------------------------------------------------------------
+# Container mounts are fixed at creation, but the Xauthority file name and the
+# Wayland socket change between logins. Mount stable paths in $STABLE_DIR and
+# refresh them before every start / enter.
+refresh_display() {
+  mkdir -p "$STABLE_DIR"
+  if [ -n "${WAYLAND_DISPLAY:-}" ] && [ -S "$HOST_RT/$WAYLAND_DISPLAY" ]; then
+    # Hard link (same tmpfs): the bind mount sees the real socket.
+    ln -f "$HOST_RT/$WAYLAND_DISPLAY" "$STABLE_DIR/wayland" 2>/dev/null || true
+  fi
+  if [ -n "${XAUTHORITY:-}" ] && [ -f "$XAUTHORITY" ]; then
+    # Copy in place (same inode), so running containers see the update too.
+    cat "$XAUTHORITY" > "$STABLE_DIR/Xauthority"
+  else
+    : >> "$STABLE_DIR/Xauthority"
+  fi
+  chmod 600 "$STABLE_DIR/Xauthority"
+}
+
+# Displays of this session: sets HAVE_WL and HAVE_X to 0 or 1.
+detect_display() {
+  HAVE_WL=0 HAVE_X=0
+  if [ -n "${WAYLAND_DISPLAY:-}" ] && [ -S "$HOST_RT/$WAYLAND_DISPLAY" ]; then HAVE_WL=1; fi
+  if [ -n "${DISPLAY:-}" ] && [ -d /tmp/.X11-unix ]; then HAVE_X=1; fi
+}
+
+# --- create ----------------------------------------------------------------------------
+# create_env NAME PROFILE WORKSPACE IMAGE DISPLAY_MODE GPU USER HOSTNAME [CONTAINER]
+# CONTAINER overrides the container name (recreate builds the new one aside).
+create_env() {
+  local name=$1 profile=$2 ws=$3 image=$4 mode=$5 gpu=$6 user=$7 host=$8 container=${9:-$(cname "$1")}
+  local pdir=$PROFILES_DIR/$profile new_profile=0
+  valid_user "$user" || die "invalid user name '$user' (lowercase letters, digits, _ . and -; not root)"
+  valid_host "$host" || die "invalid hostname '$host' (letters, digits, . and -)"
+  podman image exists "$image" || die "image $image not found; build it with: $PROG build"
+
+  detect_display
+  if [ "$mode" = auto ]; then
+    if [ $HAVE_WL = 1 ]; then mode=wayland; elif [ $HAVE_X = 1 ]; then mode=x11; else mode=none; fi
+  fi
+
+  # profile.env isn't passed here but at each enter, so that edits apply right away.
+  local args=(podman create --init
+    --name "$container"
+    --hostname "$host"
+    --label "$LBL.name=$name"
+    --label "$LBL.profile=$profile"
+    --label "$LBL.workspace=$ws"
+    --label "$LBL.image=$image"
+    --label "$LBL.display=$mode"
+    --label "$LBL.gpu=$gpu"
+    --label "$LBL.user=$user"
+    --label "$LBL.hostname=$host"
+    --userns=keep-id:uid=$CUID,gid=$CUID
+    --user $CUID:$CUID
+    --security-opt label=disable
+    --shm-size=2g
+    --tmpfs "$CRUN:rw,mode=0700,U"
+    -v "$pdir/home:/home/$user:rw"
+    -v "$ws:$ws:rw"
+    -w "$ws"
+    -v /etc/localtime:/etc/localtime:ro
+    -e "RYAD_NAME=$name"
+    -e "RYAD_PROFILE=$profile"
+    -e "RYAD_WORKSPACE=$ws"
+    -e "RYAD_USER=$user"
+    -e "HOME=/home/$user"
+  )
+  [ -n "${TZ:-}" ] && args+=(-e "TZ=$TZ")
+  # GPU (render nodes are accessible to the logged-in user through ACLs).
+  [ "$gpu" = 1 ] && [ -d /dev/dri ] && args+=(--device /dev/dri)
+
+  refresh_display
+  case $mode in
+    wayland)
+      [ $HAVE_WL = 1 ] || die "no Wayland socket found (WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-unset})"
+      args+=(-v "$STABLE_DIR/wayland:$CRUN/wayland-0" -e WAYLAND_DISPLAY=wayland-0 -e XDG_SESSION_TYPE=wayland) ;;
+    x11)
+      [ $HAVE_X = 1 ] || die "no X11 display found (DISPLAY=${DISPLAY:-unset})"
+      args+=(-e ELECTRON_OZONE_PLATFORM_HINT=x11 -e XDG_SESSION_TYPE=x11) ;;
+    none) note "no display found; GUI apps won't work in '$name'" ;;
+    *) die "invalid --display '$mode' (auto | wayland | x11)" ;;
+  esac
+  # X11 is also passed in Wayland mode, for apps without Wayland support.
+  if [ $HAVE_X = 1 ] && [ "$mode" != none ]; then
+    args+=(-v /tmp/.X11-unix:/tmp/.X11-unix:ro -e "DISPLAY=$DISPLAY"
+           -v "$STABLE_DIR/Xauthority:$CRUN/.Xauthority:ro" -e "XAUTHORITY=$CRUN/.Xauthority")
+  fi
+
+  # Last, so that a refused creation doesn't leave a new profile behind.
+  if [ -d "$pdir" ]; then
+    mkdir -p "$pdir/home"; chmod 700 "$pdir"
+  else
+    init_profile "$profile"; new_profile=1
+  fi
+  "${args[@]}" "$image" idle >/dev/null
+  ENV_OF=""
+  note "created environment '$name' ($user@$host, profile $profile, workspace $ws)"
+  if [ $new_profile = 1 ]; then
+    note "warning: created profile '$profile' with template settings; review them:"
+    printf '      %s\n' "$(tilde "$pdir")/profile.conf   image, display, user name, prompt colors" \
+      "$(tilde "$pdir")/profile.env    environment variables (API key, proxy, ...)" \
+      "then apply them with: $PROG recreate $name" >&2
+  fi
+}
+
+# start_env NAME: start it unless it's running; leaves its fresh state in ENV.
+start_env() {
+  local name=$1 c i
+  c=$(cname "$name")
+  [ "$ENV_OF" = "$name" ] || inspect_env "$name"
+  [ "${ENV[state]}" = running ] && return 0
+  refresh_display
+  podman start "$c" >/dev/null || die "could not start '$name' (if its workspace or display changed, try: $PROG recreate $name)"
+  for i in $(seq 100); do
+    podman exec "$c" test -e "$CRUN/ready" 2>/dev/null && { inspect_env "$name"; return 0; }
+    running "$name" || break
+    sleep 0.1
+  done
+  podman logs --tail 20 "$c" >&2 || true
+  die "environment '$name' failed to start"
+}
+
+resolve_workspace() {
+  local ws
+  ws=$(realpath -e -- "$1" 2>/dev/null) || die "workspace not found: $1"
+  [ -d "$ws" ] || die "workspace is not a directory: $ws"
+  if [ "$UNSAFE_WS" = 0 ]; then
+    case $ws in
+      /|"$HOME"|"$(realpath "$HOME")") die "refusing to mount '$ws' as workspace: it would expose everything to the sandbox (use --allow-unsafe-workspace to override)" ;;
+    esac
+    case $CONFIG_ROOT/ in
+      "$ws"/*) die "workspace '$ws' contains the profiles directory; refusing (use --allow-unsafe-workspace to override)" ;;
+    esac
+  fi
+  echo "$ws"
+}
+
+# --- recreate ----------------------------------------------------------------------------
+# recreate_settings NAME: load NAME into ENV and set R_* to its settings,
+# overridden by the command-line options.
+recreate_settings() {
+  inspect_env "$1"
+  R_P=${PROFILE:-${ENV[profile]}} R_W=${ENV[workspace]} R_I=${CLI_IMAGE:-${ENV[image]}}
+  if [ -n "$WORKSPACE" ]; then R_W=$(resolve_workspace "$WORKSPACE"); fi
+  # Created without a display: look again (that is what recreating it is for).
+  R_D=${CLI_DISPLAY:-${ENV[display]}}; [ "$R_D" != none ] || R_D=auto
+  R_G=${CLI_GPU:-${ENV[gpu]}}
+  # Environments created before --user/--hostname existed have no label.
+  R_U=${CLI_USER:-${ENV[user]:-claude}} R_H=${CLI_HOST:-${ENV[hostname]:-$1}}
+}
+
+# recreate_env NAME: recreate it with the R_* settings. The new container is
+# created aside; the old one is only removed once that worked.
+recreate_env() {
+  local n=$1 c new
+  c=$(cname "$n") new="$(cname "$n").new"
+  podman rm -f "$new" >/dev/null 2>&1 || true    # left over by an interrupted recreate
+  trap "podman rm -f $(printf %q "$new") >/dev/null 2>&1 || true" EXIT
+  create_env "$n" "$R_P" "$R_W" "$R_I" "$R_D" "$R_G" "$R_U" "$R_H" "$new"
+  podman rm -f -t 10 "$c" >/dev/null
+  trap - EXIT
+  podman rename "$new" "$c" || die "could not rename $new to $c; run: podman rename $new $c"
+}
+
+# --- build -----------------------------------------------------------------------------
+build_usage() {
+  cat <<USAGE
+Usage: $PROG build [options]
+
+Builds the image from the build files embedded in this ryad (or from --context),
+plus your own additions in $(tilde "$CONFIG_ROOT")/:
+  build.conf        settings, as in the embedded build.conf (APPS=, EXTRA_PACKAGES=, versions)
+  packages/*.list   extra apt package lists (a file named like a built-in one replaces it)
+  apps/*.sh         extra app installers, installed without listing them in APPS
+                    (named like a built-in one: replaces it)
+
+  --check                  show built vs available versions, don't build
+  --refresh                rebuild the apt layer (pull distro security updates)
+  --no-cache               rebuild every layer
+  --code-version=V         Claude Code: latest | stable | X.Y.Z
+  --desktop-version=V      Claude Desktop: latest | X.Y.Z
+  --rstudio-version=V      RStudio: latest | X.Y.Z-N
+  --apps="a b c"           third-party apps from apps/ (claude-* always installed)
+  --packages="p1 p2"       extra apt packages, added to EXTRA_PACKAGES
+  --base-image=IMAGE       Debian/Ubuntu base image (e.g. debian:13)
+  --image-name=NAME        resulting image name (default: ryad)
+  --config=FILE            another settings file, read after $(tilde "$CONFIG_ROOT")/build.conf
+  --context=DIR            build from the build files in DIR instead of the embedded ones
+  --export=DIR             write the build files to DIR (to customise them), don't build
+USAGE
+}
+
+has_bundle() { grep -qx "$MARKER" "$SELF" 2>/dev/null; }
+
+print_version() {
+  if [ -n "$RYAD_BUNDLE" ]; then
+    echo "ryad ${RYAD_BUNDLE% *} (bundled ${RYAD_BUNDLE#* })"
+  else
+    echo "ryad (unbundled source: $(readlink -f "$SELF"); make a single-file copy with bundle.sh)"
+  fi
+}
+
+build_main() {
+  local ctx="" export="" config="" check=0 refresh="" a opt val f
+  local base="" name="" apps="" apps_set=0 pkgs="" ccv="" cdv="" rsv=""
+  local -a flags=()
+  while [ $# -gt 0 ]; do
+    a=$1 val=""
+    case $a in
+      -h|--help) build_usage; exit 0 ;;
+      --check|--refresh|--no-cache) opt=$a ;;
+      --*=*) opt=${a%%=*} val=${a#*=} ;;
+      --*)
+        opt=$a
+        [[ " ${OPTS[build]} " == *" $a= "* ]] || die "unknown build option: $a (see: $PROG build --help)"
+        [ $# -ge 2 ] || die "$a needs a value (see: $PROG build --help)"
+        shift; val=$1 ;;
+      *) die "unexpected argument: $a (see: $PROG build --help)" ;;
+    esac
+    case $opt in
+      --check) check=1 ;;
+      --refresh) refresh=$(date +%Y%m%d%H%M%S) ;;
+      --no-cache) flags+=(--no-cache) ;;
+      --code-version) ccv=$val ;;
+      --desktop-version) cdv=$val ;;
+      --rstudio-version) rsv=$val ;;
+      --apps) apps=$val apps_set=1 ;;
+      --packages) pkgs="$pkgs $val" ;;
+      --base-image) base=$val ;;
+      --image-name) name=$val ;;
+      --config) config=$val ;;
+      --context) ctx=$val ;;
+      --export) export=$val ;;
+      *) die "unknown build option: $a (see: $PROG build --help)" ;;
+    esac
+    shift
+  done
+  for f in podman curl jq; do command -v "$f" >/dev/null || die "missing required tool: $f"; done
+  [ -z "$config" ] || [ -f "$config" ] || die "config not found: $config"
+
+  # Build files: from --context, or unpacked from this script, into a temp dir.
+  local tmp
+  tmp=$(mktemp -d "${TMPDIR:-/tmp}/ryad-build.XXXXXX")
+  trap "rm -rf $(printf %q "$tmp")" EXIT
+  if [ -n "$ctx" ]; then
+    [ -f "$ctx/Dockerfile" ] || die "no Dockerfile in $ctx"
+    for f in $BUILD_FILES; do [ ! -e "$ctx/$f" ] || cp -a "$ctx/$f" "$tmp/"; done
+  elif has_bundle; then
+    awk -v m="$MARKER" 'f { print } $0 == m { f = 1 }' "$SELF" | base64 -d | tar -xz -C "$tmp"
+  else
+    die "this ryad has no embedded build files (it's the unbundled source); use --context=DIR, or make a bundle with bundle.sh"
+  fi
+
+  if [ -n "$export" ]; then
+    [ ! -e "$export" ] || [ -z "$(ls -A "$export")" ] || die "$export exists and is not empty"
+    mkdir -p "$export"
+    cp -a "$tmp"/* "$export/"
+    note "build files written to $export; after editing them: $PROG build --context=$export"
+    exit 0
+  fi
+
+  # Your additions from the config folder, over the built-in files.
+  local extra_apps="" added=()
+  for f in "$CONFIG_ROOT"/packages/*.list; do
+    [ -f "$f" ] || continue
+    cp "$f" "$tmp/packages/"; added+=("packages/${f##*/}")
+  done
+  for f in "$CONFIG_ROOT"/apps/*.sh; do
+    [ -f "$f" ] || continue
+    cp "$f" "$tmp/apps/"; added+=("apps/${f##*/}")
+    case ${f##*/} in claude-code.sh|claude-desktop.sh|lib.sh) ;; *) extra_apps+=" $(basename "$f" .sh)" ;; esac
+  done
+
+  # Settings: built-in build.conf, then yours, then --config, then the options.
+  local confs=("$tmp/build.conf")
+  [ ! -f "$CONFIG_ROOT/build.conf" ] || confs+=("$CONFIG_ROOT/build.conf")
+  [ -z "$config" ] || confs+=("$config")
+  for f in "${confs[@]}"; do
+    # shellcheck disable=SC1090
+    . "$f"
+  done
+  : "${BASE_IMAGE:=ubuntu:26.04}" "${IMAGE_NAME:=ryad}" "${APPS:=}" "${EXTRA_PACKAGES:=}"
+  : "${CLAUDE_CODE_VERSION:=latest}" "${CLAUDE_DESKTOP_VERSION:=latest}" "${RSTUDIO_VERSION:=latest}"
+  [ -z "$base" ] || BASE_IMAGE=$base
+  [ -z "$name" ] || IMAGE_NAME=$name
+  [ "$apps_set" = 0 ] || APPS=$apps
+  EXTRA_PACKAGES="$EXTRA_PACKAGES$pkgs"
+  [ -z "$ccv" ] || CLAUDE_CODE_VERSION=$ccv
+  [ -z "$cdv" ] || CLAUDE_DESKTOP_VERSION=$cdv
+  [ -z "$rsv" ] || RSTUDIO_VERSION=$rsv
+  for a in $extra_apps; do [[ " $APPS " == *" $a "* ]] || APPS="$APPS $a"; done
+  APPS=${APPS# }
+  [ ${#added[@]} -eq 0 ] || echo "==> Your additions: ${added[*]}"
+
+  local deb_arch
+  case $(uname -m) in x86_64|amd64) deb_arch=amd64 ;; aarch64|arm64) deb_arch=arm64 ;;
+    *) die "unsupported architecture $(uname -m)" ;; esac
+  has_app() { [[ " $APPS " == *" $1 "* ]]; }
+
+  # --- check the base image
+  echo "==> Base image: $BASE_IMAGE"
+  podman pull -q "$BASE_IMAGE" >/dev/null
+  local base_info base_id base_version base_codename
+  base_info=$(podman run --rm --entrypoint /bin/sh "$BASE_IMAGE" -c \
+    'command -v apt-get >/dev/null || exit 3; . /etc/os-release; echo "$ID ${VERSION_ID:-} ${VERSION_CODENAME:-}"') \
+    || die "base image $BASE_IMAGE is not Debian/Ubuntu-based (no apt-get); Claude Desktop is only distributed as a .deb: use Ubuntu >= 22.04 or Debian >= 12"
+  read -r base_id base_version base_codename <<<"$base_info"
+  echo "    $base_id $base_version ($base_codename)"
+
+  # --- resolve versions ("latest" etc. to a concrete version, so that a rebuild
+  # only rebuilds the layers whose version changed)
+  local cc_v cd_v var tag
+  case $CLAUDE_CODE_VERSION in
+    latest|stable) cc_v=$(curl -fsSL "https://downloads.claude.ai/claude-code-releases/$CLAUDE_CODE_VERSION") ;;
+    *) cc_v=$CLAUDE_CODE_VERSION ;;
+  esac
+  if [ "$CLAUDE_DESKTOP_VERSION" = latest ]; then
+    cd_v=$(curl -fsSL "https://downloads.claude.ai/claude-desktop/apt/stable/dists/stable/main/binary-$deb_arch/Packages" \
+      | awk '/^Package: /{p=$2} /^Version: /{ if (p == "claude-desktop") print $2 }' | sort -V | tail -n1)
+  else
+    cd_v=$CLAUDE_DESKTOP_VERSION
+  fi
+  [[ $cc_v =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]] || die "could not resolve Claude Code version ($CLAUDE_CODE_VERSION)"
+  [ -n "$cd_v" ] || die "could not resolve Claude Desktop version ($CLAUDE_DESKTOP_VERSION)"
+  if has_app rstudio && [ "$RSTUDIO_VERSION" = latest ]; then
+    local key=$base_codename url
+    [ "$base_id" = debian ] && key="debian${base_version%%.*}"
+    url=$(curl -fsSL https://www.rstudio.com/wp-content/downloads.json \
+      | jq -r --arg k "$key" '.rstudio.open_source.stable.desktop.installer as $i | ($i[$k] // $i.jammy).url')
+    RSTUDIO_VERSION=$(sed -E 's|.*/rstudio-([0-9.]+-[0-9]+)-[a-z0-9_]+\.deb$|\1|' <<<"$url")
+  fi
+
+  # Per-app versions: every *_VERSION set in the settings files (except Claude's).
+  local app_versions=()
+  for var in $(cat "${confs[@]}" | grep -oE '^[A-Z0-9_]+_VERSION=' | tr -d = | sort -u) RSTUDIO_VERSION; do
+    case $var in CLAUDE_*) continue ;; esac
+    [[ " ${app_versions[*]} " == *" $var="* ]] && continue
+    app_versions+=("$var=${!var}")
+  done
+
+  printf '==> Versions\n    Claude Code     %s\n    Claude Desktop  %s\n' "$cc_v" "$cd_v"
+  has_app rstudio && printf '    RStudio         %s\n' "$RSTUDIO_VERSION"
+
+  if [ "$check" = 1 ]; then
+    if podman image exists "$IMAGE_NAME:latest"; then
+      local cur_cc cur_cd
+      cur_cc=$(podman image inspect -f "{{ index .Labels \"$LBL.code-version\" }}" "$IMAGE_NAME:latest")
+      cur_cd=$(podman image inspect -f "{{ index .Labels \"$LBL.desktop-version\" }}" "$IMAGE_NAME:latest")
+      printf '==> Built image %s:latest\n    Claude Code     %s\n    Claude Desktop  %s\n' "$IMAGE_NAME" "$cur_cc" "$cur_cd"
+      if [ "$cur_cc" = "$cc_v" ] && [ "$cur_cd" = "$cd_v" ]; then echo "Up to date."; else echo "Update available: run $PROG build"; fi
+    else
+      echo "Image $IMAGE_NAME:latest not built yet."
+    fi
+    return 0
+  fi
+
+  # --- build
+  tag="cc-${cc_v}_cd-${cd_v}"
+  tag=${tag//[^A-Za-z0-9_.-]/_}
+  echo "==> Building $IMAGE_NAME:latest ($tag)"
+  podman build ${flags[@]+"${flags[@]}"} --format docker \
+    --build-arg BASE_IMAGE="$BASE_IMAGE" \
+    --build-arg APPS="$APPS" \
+    --build-arg APP_VERSIONS="${app_versions[*]}" \
+    --build-arg EXTRA_PACKAGES="$EXTRA_PACKAGES" \
+    --build-arg REFRESH="$refresh" \
+    --build-arg CLAUDE_DESKTOP_VERSION="$cd_v" \
+    --build-arg CLAUDE_CODE_VERSION="$cc_v" \
+    --build-arg RYAD_LAUNCHER="$([ -n "$RYAD_BUNDLE" ] && echo "${RYAD_BUNDLE% *}" || echo source)" \
+    -t "$IMAGE_NAME:latest" -t "$IMAGE_NAME:$tag" \
+    -f "$tmp/Dockerfile" "$tmp"
+  echo "==> Done: $IMAGE_NAME:latest ($tag)"
+  echo "    Environments on an older build: $PROG list (marked *), then: $PROG recreate --outdated"
+}
+
+# Build options are its own: handle it before the general option parsing.
+if [ "${1:-}" = build ]; then shift; build_main "$@"; exit 0; fi
+
+# --- arguments -------------------------------------------------------------------------
+NAME="" CMD=enter PROFILE="" WORKSPACE="" CLI_IMAGE="" CLI_DISPLAY="" CLI_GPU="" CLI_USER="" CLI_HOST=""
+UNSAFE_WS=0 FORCE=0 YES=0 ALL=0 OUTDATED=0 DETACH=0 QUIET=0 HELP=0
+POS=() RUN=() SEEN=()
+while [ $# -gt 0 ]; do
+  a=$1 val=""
+  case $a in
+    -p) a=--profile ;; -w) a=--workspace ;; -y) a=--yes ;; -f) a=--force ;;
+    -d) a=--detach ;; -q) a=--quiet ;; -h) a=--help ;;
+  esac
+  case $a in
+    --) shift; RUN=("$@"); break ;;
+    --*=*)
+      opt=${a%%=*} val=${a#*=}
+      [[ $VALUE_OPTS == *" $opt "* ]] || die "unknown option: $1 (see --help)" ;;
+    --*)
+      opt=$a
+      if [[ $VALUE_OPTS == *" $opt "* ]]; then
+        [ $# -ge 2 ] || die "$1 needs a value (see --help)"
+        shift; val=$1
+      fi ;;
+    -*) die "unknown option: $1 (see --help)" ;;
+    *) POS+=("$a"); shift; continue ;;
+  esac
+  case $opt in
+    --profile) PROFILE=$val ;;
+    --workspace) WORKSPACE=$val ;;
+    --image) CLI_IMAGE=$val ;;
+    --display) CLI_DISPLAY=$val ;;
+    --user) CLI_USER=$val ;;
+    --hostname) CLI_HOST=$val ;;
+    --no-gpu) CLI_GPU=0 ;;
+    --allow-unsafe-workspace) UNSAFE_WS=1 ;;
+    --force) FORCE=1 ;;
+    --yes) YES=1 ;;
+    --all) ALL=1 ;;
+    --outdated) OUTDATED=1 ;;
+    --detach) DETACH=1 ;;
+    --quiet) QUIET=1 ;;
+    --help) HELP=1 ;;
+    --version) print_version; exit 0 ;;
+    *) die "unknown option: $1 (see --help)" ;;
+  esac
+  [ "$opt" = --help ] || SEEN+=("$opt")
+  shift
+done
+if [ ${#POS[@]} -gt 0 ]; then
+  if [[ $SUBCOMMANDS == *" ${POS[0]} "* ]]; then
+    CMD=${POS[0]}; POS=("${POS[@]:1}")
+  elif [[ $ALIASES == *" ${POS[0]}:"* ]]; then
+    CMD=${ALIASES#*" ${POS[0]}:"}; CMD=${CMD%% *}; POS=("${POS[@]:1}")
+  fi
+fi
+[ "$CMD" != build ] || die "options of build go after it: $PROG build [options]"
+[ "$HELP" = 0 ] || { usage; exit 0; }
+for opt in ${SEEN[@]+"${SEEN[@]}"}; do
+  case " ${OPTS[$CMD]} " in
+    *" $opt "*|*" $opt= "*) ;;
+    *) die "$opt doesn't apply to '$PROG ${CMD/#enter/[NAME]}' (see --help)" ;;
+  esac
+done
+case $CMD in
+  help|completion) ;;
+  *) command -v podman >/dev/null || die "podman is not installed" ;;
+esac
+
+# --- subcommands ----------------------------------------------------------------------
+case $CMD in
+  help) usage; exit 0 ;;
+
+  completion)
+    [ "${POS[*]}" = bash ] || die "usage: $PROG completion bash"
+    echo '_ryad_opts() { # SUBCOMMAND: its options'
+    echo '  case $1 in'
+    for k in "${!OPTS[@]}"; do printf '    %s) echo "%s" ;;\n' "$k" "${OPTS[$k]} --help"; done
+    echo '  esac'
+    echo '}'
+    # Words are re-split on blanks from COMP_LINE, so --opt=VALUE and IMAGE:TAG
+    # stay whole; replies are then trimmed to what readline replaces (the text
+    # after the last = or :, both in COMP_WORDBREAKS).
+    sed -e "s/@LBL@/$LBL/g" -e "s/@PREFIX@/$PREFIX/g" \
+        -e "s/@SUBCOMMANDS@/${SUBCOMMANDS# }/g" -e "s/@ALIASES@/${ALIASES# }/g" <<'COMPLETION'
+_ryad_envs() {
+  podman ps "$@" --filter label=@LBL@.name --format '{{.Names}} {{ index .Labels "@LBL@.name" }}' 2>/dev/null \
+    | awk '$1 == "@PREFIX@" $2 { print $2 }'
+}
+_ryad_sub() { # WORD: the subcommand it names (aliases resolved), if any
+  local a=" @ALIASES@"
+  case " @SUBCOMMANDS@" in *" $1 "*) echo "$1"; return 0 ;; esac
+  case $a in *" $1:"*) a=${a#*" $1:"}; echo "${a%% *}"; return 0 ;; esac
+  return 1
+}
+_ryad_profiles() {
+  local d
+  for d in "${RYAD_HOME:-${XDG_CONFIG_HOME:-$HOME/.config}/ryad}"/profiles/*/; do
+    [ -d "$d" ] && basename "$d"
+  done
+}
+_ryad_values() { # OPTION VALUE: set reply to the completions of the option's value
+  case $1 in
+    --profile|-p) mapfile -t reply < <(compgen -W "$(_ryad_profiles)" -- "$2") ;;
+    --workspace|-w) compopt -o filenames; mapfile -t reply < <(compgen -d -- "$2") ;;
+    --image) mapfile -t reply < <(compgen -W "$(podman images --format '{{.Repository}}:{{.Tag}}' 2>/dev/null | grep -v '<none>')" -- "$2") ;;
+    --display) mapfile -t reply < <(compgen -W "auto wayland x11" -- "$2") ;;
+    --context|--export) compopt -o filenames; mapfile -t reply < <(compgen -d -- "$2") ;;
+    --config) compopt -o filenames; mapfile -t reply < <(compgen -f -- "$2") ;;
+    --code-version) mapfile -t reply < <(compgen -W "latest stable" -- "$2") ;;
+    --desktop-version|--rstudio-version) mapfile -t reply < <(compgen -W "latest" -- "$2") ;;
+  esac
+}
+_ryad() {
+  local line=${COMP_LINE:0:COMP_POINT} cur sub="" arg1="" npos=0 w opt="" skip=0
+  local -a words reply=()
+  read -ra words <<<"$line"
+  if [[ $line == *[[:space:]] ]]; then cur=""; else cur=${words[-1]}; unset 'words[-1]'; fi
+  for w in "${words[@]:1}"; do
+    if [ $skip = 1 ]; then skip=0; continue; fi
+    case $w in
+      --) compopt -o bashdefault -o default; COMPREPLY=(); return ;;
+      --profile|--workspace|--image|--display|--user|--hostname|-p|-w) opt=$w skip=1 ;;
+      --context|--export|--config|--base-image|--image-name|--apps|--packages|--*-version) opt=$w skip=1 ;;
+      -*) ;;
+      *) if [ -z "$sub" ] && [ $npos = 0 ] && sub=$(_ryad_sub "$w"); then :; else [ $npos = 0 ] && arg1=$w; npos=$((npos + 1)); fi ;;
+    esac
+  done
+  local subs=""   # offer subcommands only where NAME could be one (not after 'enter')
+  [ -n "$sub" ] || subs="@SUBCOMMANDS@"
+  sub=${sub:-enter}
+
+  if [ $skip = 1 ]; then          # the value of '--opt VALUE'
+    _ryad_values "$opt" "$cur"
+  elif [[ $cur == --*=* ]]; then  # the value of '--opt=VALUE'
+    _ryad_values "${cur%%=*}" "${cur#*=}"
+    reply=("${reply[@]/#/${cur%%=*}=}")
+  elif [[ $cur == -* ]]; then
+    mapfile -t reply < <(compgen -W "$(_ryad_opts "$sub")" -- "$cur")
+  else
+    case $sub in
+      enter) [ $npos = 0 ] && mapfile -t reply < <(compgen -W "$subs $(_ryad_envs -a)" -- "$cur") ;;
+      stop) mapfile -t reply < <(compgen -W "$(_ryad_envs)" -- "$cur") ;;
+      rm) mapfile -t reply < <(compgen -W "$(_ryad_envs -a)" -- "$cur") ;;
+      recreate|info|versions) [ $npos = 0 ] && mapfile -t reply < <(compgen -W "$(_ryad_envs -a)" -- "$cur") ;;
+      profiles)
+        case $npos:$arg1 in
+          0:*) mapfile -t reply < <(compgen -W "list create edit path rm" -- "$cur") ;;
+          1:edit|1:path|*:rm) mapfile -t reply < <(compgen -W "$(_ryad_profiles)" -- "$cur") ;;
+          2:edit) mapfile -t reply < <(compgen -W "conf env" -- "$cur") ;;
+        esac ;;
+      completion) [ $npos = 0 ] && mapfile -t reply < <(compgen -W "bash" -- "$cur") ;;
+    esac
+  fi
+
+  local pre=${cur%"${cur##*[=:]}"}
+  COMPREPLY=("${reply[@]#"$pre"}")
+  [ ${#reply[@]} = 1 ] && [[ ${reply[0]} == *= ]] && compopt -o nospace
+  return 0
+}
+COMPLETION
+    printf 'complete -F _ryad %q\n' "$PROG"
+    exit 0 ;;
+
+  profiles)
+    action=${POS[0]:-list}; POS=("${POS[@]:1}")
+    case $action in
+      list)
+        [ ${#POS[@]} -eq 0 ] || die "usage: $PROG profiles [list]"
+        profs=()
+        for d in "$PROFILES_DIR"/*/; do [ -d "$d" ] && profs+=("$(basename "$d")"); done
+        [ ${#profs[@]} -gt 0 ] || { echo "no profiles (one is created with your first environment, or: $PROG profiles create NAME)"; exit 0; }
+        declare -A users=()
+        while read -r c n p; do
+          [ "$c" = "$PREFIX$n" ] && users["x$p"]+="${users["x$p"]:+, }$n"
+        done < <(podman ps -a --filter "label=$LBL.name" --format "{{.Names}} $(lbl name) $(lbl profile)" | sort -k2)
+        {
+          printf 'PROFILE\tENVIRONMENTS\tCLAUDE CODE\n'
+          for p in "${profs[@]}"; do
+            d=$PROFILES_DIR/$p
+            if [ -f "$d/home/.claude/.credentials.json" ]; then login="logged in"
+            elif grep -qE '^(ANTHROPIC_API_KEY|CLAUDE_CODE_USE_BEDROCK|CLAUDE_CODE_USE_VERTEX)=' "$d/profile.env" 2>/dev/null; then login="via profile.env"
+            else login="not logged in"; fi
+            printf '%s\t%s\t%s\n' "$p" "${users["x$p"]:--}" "$login"
+          done
+        } | column -t -s "$T" ;;
+
+      create)
+        [ ${#POS[@]} -eq 1 ] || die "usage: $PROG profiles create NAME"
+        p=${POS[0]} pdir=$PROFILES_DIR/${POS[0]}
+        check_profile "$p"
+        [ ! -e "$pdir" ] || die "profile '$p' already exists ($pdir)"
+        init_profile "$p"
+        note "created profile '$p' in $pdir"
+        note "use it with: $PROG NAME --profile=$p" ;;
+
+      edit)
+        [ ${#POS[@]} -ge 1 ] && [ ${#POS[@]} -le 2 ] || die "usage: $PROG profiles edit NAME [conf|env]"
+        p=${POS[0]} what=${POS[1]:-conf}
+        check_profile "$p"
+        case $what in conf|env) ;; *) die "usage: $PROG profiles edit NAME [conf|env]" ;; esac
+        [ -d "$PROFILES_DIR/$p" ] || note "created profile '$p'"
+        init_profile "$p"   # also restores a deleted template
+        editor=${VISUAL:-${EDITOR:-vi}}
+        # Unquoted: the editor command may have arguments (e.g. "code -w").
+        # shellcheck disable=SC2086
+        $editor "$PROFILES_DIR/$p/profile.$what" || die "$editor exited with an error"
+        case $what in
+          conf) note "creation settings apply when you recreate: $PROG recreate NAME; PROMPT_COLORS applies to new shells" ;;
+          env) note "new shells and apps in environments on '$p' get these variables" ;;
+        esac ;;
+
+      path)
+        [ ${#POS[@]} -eq 1 ] || die "usage: $PROG profiles path NAME"
+        p=${POS[0]}
+        check_profile "$p"
+        [ -d "$PROFILES_DIR/$p" ] || die "no profile '$p'"
+        echo "$PROFILES_DIR/$p" ;;
+
+      rm)
+        [ ${#POS[@]} -gt 0 ] || die "usage: $PROG profiles rm NAME... [--yes]"
+        for p in "${POS[@]}"; do
+          check_profile "$p"
+          [ -d "$PROFILES_DIR/$p" ] || die "no profile '$p'"
+          users=$(env_names -a --filter "label=$LBL.profile=$p" | sort | tr '\n' ' ')
+          [ -z "$users" ] || die "profile '$p' is used by: $users(remove them first: $PROG rm ${users% })"
+        done
+        [ "$YES" = 1 ] || echo "Delete profile(s) ${POS[*]}? Their logins, settings and history are lost."
+        confirm "Continue?"
+        for p in "${POS[@]}"; do
+          # In Podman's user namespace, so files created by other UIDs inside (sudo) go too.
+          podman unshare rm -rf -- "$PROFILES_DIR/$p"
+          note "removed profile '$p'"
+        done ;;
+
+      *) die "unknown profiles command '$action' (list, create, edit, path, rm)" ;;
+    esac
+    exit 0 ;;
+
+  versions)
+    [ ${#POS[@]} -le 1 ] || die "usage: $PROG versions [NAME | --image=IMAGE]"
+    if [ ${#POS[@]} -eq 1 ]; then
+      [ -z "$CLI_IMAGE" ] || die "give either NAME or --image"
+      check_envs "${POS[0]}"
+      img=${ENV[imageid]}
+      echo "image: ${ENV[image]}$(env_outdated && echo " (an older build; to update: $PROG recreate ${POS[0]})")"
+    else
+      img=${CLI_IMAGE:-$DEFAULT_IMAGE}
+      podman image exists "$img" || die "image $img not found; build it with: $PROG build"
+    fi
+    podman run --rm --entrypoint cat "$img" /etc/ryad-release
+    podman image inspect -f "base image: {{ index .Labels \"$LBL.base-image\" }}
+apps: {{ index .Labels \"$LBL.apps\" }}
+built by: ryad {{ or (index .Labels \"$LBL.launcher\") \"(before bundles)\" }}" "$img"
+    exit 0 ;;
+
+  list)
+    [ ${#POS[@]} -eq 0 ] || die "usage: $PROG list [-q]"
+    rows=$(env_rows)
+    if [ "$QUIET" = 1 ]; then [ -z "$rows" ] || cut -f1 <<<"$rows"; exit 0; fi
+    [ -n "$rows" ] || { echo "no environments (create one with: $PROG NAME --workspace=DIR)"; exit 0; }
+    {
+      printf 'NAME\tSTATE\tPROFILE\tWORKSPACE\tIMAGE\n'
+      while IFS=$'\t' read -r n s p w i o; do
+        printf '%s\t%s\t%s\t%s\t%s\n' "$n" "$s" "$p" "$w" "$i$([ "$o" = 0 ] || echo ' *')"
+      done <<<"$rows"
+    } | column -t -s "$T"
+    if grep -q "${T}1\$" <<<"$rows"; then echo "* outdated: $PROG recreate --outdated"; fi
+    exit 0 ;;
+
+  info)
+    [ ${#POS[@]} -le 1 ] || die "usage: $PROG info [NAME]"
+    if [ ${#POS[@]} -eq 1 ]; then
+      n=${POS[0]}; check_envs "$n"
+    else
+      find_env "$(realpath -e -- "$PWD")" "" 0
+      n=$MATCH
+      [ -n "$n" ] || die "no environment for this folder (see: $PROG list)"
+      inspect_env "$n"
+    fi
+    img=${ENV[image]}
+    if env_outdated; then img+="  (outdated: $PROG recreate $n)"; fi
+    printf '%-10s %s\n' \
+      name "$n  (${ENV[state]}, created ${ENV[created]})" \
+      container "$(cname "$n")" \
+      profile "${ENV[profile]}  ($(tilde "$PROFILES_DIR/${ENV[profile]}"))" \
+      workspace "$(tilde "${ENV[workspace]}")" \
+      image "$img" \
+      user "${ENV[user]:-claude}@${ENV[hostname]:-$n}" \
+      display "${ENV[display]}, gpu $([ "${ENV[gpu]}" = 1 ] && echo on || echo off)"
+    exit 0 ;;
+
+  stop)
+    if [ "$ALL" = 1 ]; then
+      mapfile -t POS < <(env_names)
+      [ ${#POS[@]} -gt 0 ] || { note "no environment is running"; exit 0; }
+    fi
+    [ ${#POS[@]} -gt 0 ] || die "usage: $PROG stop NAME... | --all"
+    check_envs "${POS[@]}"
+    for n in "${POS[@]}"; do
+      if running "$n"; then
+        podman stop -t 10 "$(cname "$n")" >/dev/null
+        note "stopped '$n'"
+      else
+        note "'$n' was not running"
+      fi
+    done
+    exit 0 ;;
+
+  rm)
+    [ ${#POS[@]} -gt 0 ] || die "usage: $PROG rm NAME... [--force]"
+    [ "$YES" = 0 ] || FORCE=1
+    check_envs "${POS[@]}"
+    if [ "$FORCE" = 0 ]; then
+      for n in "${POS[@]}"; do
+        running "$n" && die "'$n' is running; stop it first or use --force"
+      done
+    fi
+    for n in "${POS[@]}"; do
+      running "$n" && podman stop -t 10 "$(cname "$n")" >/dev/null
+      podman rm "$(cname "$n")" >/dev/null
+      note "removed '$n' (profile and workspace untouched)"
+    done
+    exit 0 ;;
+
+  recreate)
+    if [ "$OUTDATED" = 1 ] || [ "$ALL" = 1 ]; then
+      [ ${#POS[@]} -eq 0 ] || die "give either a NAME or --outdated/--all"
+      [ -z "$PROFILE$WORKSPACE" ] || die "--profile and --workspace change one environment at a time: $PROG recreate NAME --profile=..."
+      targets=() lines=()
+      while IFS=$'\t' read -r n s p w i o; do
+        [ "$ALL" = 1 ] || [ "$o" = 1 ] || continue
+        targets+=("$n")
+        lines+=("$(printf '  %-16s %-8s %s' "$n" "$s" "$([ "$s" != running ] || echo '(its shells and apps will be closed)')")")
+      done < <(env_rows)
+      if [ ${#targets[@]} -eq 0 ]; then
+        if [ "$ALL" = 1 ]; then note "no environments"; else note "nothing to recreate: all environments are on their current image"; fi
+        exit 0
+      fi
+      if [ "$YES" = 0 ]; then
+        echo "Recreate these environments:"
+        printf '%s\n' "${lines[@]}"
+        echo "Changes made inside the containers (e.g. packages installed with sudo) are lost;"
+        echo "profiles and workspaces are kept."
+      fi
+      confirm "Continue?"
+      for n in "${targets[@]}"; do recreate_settings "$n"; recreate_env "$n"; done
+      note "enter them with: $PROG NAME"
+    else
+      [ ${#POS[@]} -eq 1 ] || die "usage: $PROG recreate NAME [options] | --outdated | --all"
+      n=${POS[0]}
+      check_envs "$n"
+      [ -z "$PROFILE" ] || check_profile "$PROFILE"
+      recreate_settings "$n"
+      if [ "$YES" = 0 ]; then
+        chg() { [ "$2" = "$3" ] || printf '  %-10s %s -> %s%s\n' "$1" "$2" "$3" "${4:-}"; }
+        echo "Recreate '$n'$([ "${ENV[state]}" != running ] || echo ' (running: its shells and apps will be closed)')?"
+        chg profile "${ENV[profile]}" "$R_P" "   (other logins, settings and history)"
+        chg workspace "$(tilde "${ENV[workspace]}")" "$(tilde "$R_W")"
+        if [ "${ENV[image]}" != "$R_I" ]; then chg image "${ENV[image]}" "$R_I"
+        elif env_outdated; then printf '  %-10s %s\n' image "$R_I (newer build)"; fi
+        chg display "${ENV[display]}" "$R_D"
+        chg gpu "${ENV[gpu]}" "$R_G"
+        chg user "${ENV[user]:-claude}" "$R_U"
+        chg hostname "${ENV[hostname]:-$n}" "$R_H"
+        echo "Changes made inside the container (e.g. packages installed with sudo) are lost;"
+        echo "the profile and workspace folders are kept."
+      fi
+      confirm "Continue?"
+      recreate_env "$n"
+      note "enter it with: $PROG $n"
+    fi
+    exit 0 ;;
+
+  prune)
+    [ ${#POS[@]} -eq 0 ] || die "usage: $PROG prune [--yes]"
+    # Images built by "ryad build" (or derived from one) carry $LBL.code-version.
+    used=" $(podman ps -a --format '{{.ImageID}}' | cut -c1-12 | tr '\n' ' ') "
+    declare -A tags=() size=() keep=()
+    while IFS=$'\t' read -r id tag sz v; do
+      [ -n "$v" ] || continue
+      id=${id:0:12}
+      case $tag in *:latest) keep[$id]=1 ;; esac
+      [[ $used == *" $id "* ]] && keep[$id]=1
+      [ "$tag" = "<none>:<none>" ] || tags[$id]+="${tags[$id]:+ }$tag"
+      size[$id]=$sz
+    done < <(podman images --format "{{.ID}}$T{{.Repository}}:{{.Tag}}$T{{.Size}}$T$(lbl code-version)")
+    ids=()
+    for id in "${!size[@]}"; do [ -n "${keep[$id]:-}" ] || ids+=("$id"); done
+    [ ${#ids[@]} -gt 0 ] || { note "no unused ryad images"; exit 0; }
+    if [ "$YES" = 0 ]; then
+      echo "Unused ryad images:"
+      for id in "${ids[@]}"; do printf '  %-40s %s\n' "${tags[$id]:-<none> ($id)}" "${size[$id]}"; done
+    fi
+    confirm "Remove them?"
+    for id in "${ids[@]}"; do
+      # Untag one by one (removing the last tag removes the image); by ID if untagged.
+      for t in ${tags[$id]:-$id}; do
+        podman rmi "$t" >/dev/null || note "could not remove $t"
+      done
+    done
+    note "removed ${#ids[@]} image(s)"
+    exit 0 ;;
+esac
+
+# --- enter (default) -----------------------------------------------------------------------
+[ ${#POS[@]} -le 1 ] || die "too many arguments: ${POS[*]} (see --help; a command goes after --)"
+[ "$DETACH" = 0 ] || [ ${#RUN[@]} -gt 0 ] || die "--detach needs a command: $PROG [NAME] -d -- CMD"
+EXPLICIT_NAME=0
+if [ ${#POS[@]} -eq 1 ]; then
+  NAME=${POS[0]}; EXPLICIT_NAME=1
+  exists "$NAME" || check_name "$NAME"   # existing ones may predate a reserved word
+else
+  # No name: the environment of this folder or, without --workspace, of the
+  # closest parent folder (on --profile, if given).
+  if [ -n "$WORKSPACE" ]; then
+    dir=$(resolve_workspace "$WORKSPACE"); find_env "$dir" "$PROFILE" 1
+  else
+    dir=$(realpath -e -- "$PWD"); find_env "$dir" "$PROFILE" 0
+  fi
+  NAME=$MATCH
+fi
+
+if [ -n "$NAME" ] && exists "$NAME"; then
+  # Existing environment: its settings are fixed.
+  if [ -n "$PROFILE" ] && [ "$PROFILE" != "$(label "$NAME" profile)" ]; then
+    die "'$NAME' uses profile '$(label "$NAME" profile)', not '$PROFILE' (to change it: $PROG recreate $NAME --profile=$PROFILE)"
+  fi
+  if [ -n "$WORKSPACE" ] && [ "$(resolve_workspace "$WORKSPACE")" != "$(label "$NAME" workspace)" ]; then
+    die "'$NAME' uses workspace $(label "$NAME" workspace) (to move it: $PROG recreate $NAME --workspace=$WORKSPACE; or pick another name)"
+  fi
+  if [ -n "$CLI_IMAGE$CLI_DISPLAY$CLI_GPU$CLI_USER$CLI_HOST" ]; then
+    note "--image/--display/--no-gpu/--user/--hostname only apply when creating; to change them: $PROG recreate $NAME --image=… --user=…"
+  fi
+else
+  # New environment (or the default name derived from the workspace).
+  CONFIRM=0
+  if [ "$EXPLICIT_NAME" = 1 ] && [ -z "$WORKSPACE" ]; then
+    # Maybe a typo, or meant for another folder: don't create it silently in $PWD.
+    similar=$(similar_envs "$NAME")
+    note "no environment '$NAME'${similar:+ (did you mean: $similar?)}"
+    [ -t 0 ] || [ "$YES" = 1 ] || die "to create it: $PROG $NAME --workspace=DIR"
+    CONFIRM=1
+  fi
+  WS=$(resolve_workspace "${WORKSPACE:-$PWD}")
+  if [ -z "$NAME" ]; then
+    NAME=$(basename "$WS" | tr 'A-Z' 'a-z' | sed -E 's/[^a-z0-9_-]+/-/g; s/^[^a-z0-9]+//')
+    [ -n "$NAME" ] || NAME=env
+    valid_name "$NAME" || NAME="env-$NAME"
+  fi
+  if exists "$NAME"; then
+    # Default name already taken: only reuse it if it's the same workspace.
+    if [ "$EXPLICIT_NAME" = 0 ] && [ "$(label "$NAME" workspace)" != "$WS" ]; then
+      die "environment '$NAME' already exists for $(label "$NAME" workspace); give this one a name: $PROG <name> --workspace=$WS"
+    fi
+    [ -z "$PROFILE" ] || [ "$PROFILE" = "$(label "$NAME" profile)" ] \
+      || die "'$NAME' uses profile '$(label "$NAME" profile)', not '$PROFILE'"
+  else
+    PROFILE=${PROFILE:-default}
+    check_profile "$PROFILE"
+    [ "$CONFIRM" = 0 ] || confirm "Create '$NAME' for $(tilde "$WS"), profile $PROFILE$([ -d "$PROFILES_DIR/$PROFILE" ] || echo ' (new)')?"
+    # Creation defaults from the profile, overridden by command-line flags.
+    load_profile_conf "$PROFILE"
+    U=${CLI_USER:-$USER_NAME}
+    if [ -z "$U" ]; then
+      U=$(id -un)
+      valid_user "$U" || { note "your user name '$U' can't be used inside; using 'claude' (choose one with --user=NAME)"; U=claude; }
+    fi
+    create_env "$NAME" "$PROFILE" "$WS" "${CLI_IMAGE:-${IMAGE:-$DEFAULT_IMAGE}}" \
+      "${CLI_DISPLAY:-${DISPLAY_MODE:-auto}}" "${CLI_GPU:-${GPU:-1}}" "$U" "${CLI_HOST:-${HOST_NAME:-$NAME}}"
+  fi
+fi
+
+start_env "$NAME"     # ENV now holds its fresh state and labels
+C=$(cname "$NAME") PDIR=$PROFILES_DIR/${ENV[profile]}
+
+# A display mode chosen at creation that doesn't fit this session.
+detect_display
+case ${ENV[display]} in
+  none) [ "$HAVE_WL$HAVE_X" = 00 ] \
+          || note "'$NAME' was created without a display, so GUI apps won't work in it (to fix: $PROG recreate $NAME)" ;;
+  wayland) [ $HAVE_WL = 1 ] || [ $HAVE_X = 0 ] \
+          || note "'$NAME' uses Wayland but this session has none; GUI apps won't work (to use X11: $PROG recreate $NAME --display=x11)" ;;
+  x11) [ $HAVE_X = 1 ] || [ $HAVE_WL = 0 ] \
+          || note "'$NAME' uses X11 but this session has no X display; GUI apps won't work (to use Wayland: $PROG recreate $NAME --display=wayland)" ;;
+esac
+
+# Open in the current folder if it's inside the workspace, else at its top.
+ws=${ENV[workspace]} wd=$(realpath -e -- "$PWD" 2>/dev/null || true)
+case $wd/ in "${ws%/}"/*) ;; *) wd=$ws ;; esac
+exec_args=(-w "$wd")
+# Re-read at each enter, so edits apply to new shells.
+[ -f "$PDIR/profile.env" ] && exec_args+=(--env-file "$PDIR/profile.env")
+[ -n "${TERM:-}" ] && exec_args+=(-e "TERM=$TERM")
+[ -n "${COLORTERM:-}" ] && exec_args+=(-e "COLORTERM=$COLORTERM")
+[ -n "${RYAD_ELECTRON_NO_SANDBOX:-}" ] && exec_args+=(-e "RYAD_ELECTRON_NO_SANDBOX=$RYAD_ELECTRON_NO_SANDBOX")
+load_profile_conf "${ENV[profile]}"
+PROMPT_COLORS=${RYAD_PROMPT_COLORS:-$PROMPT_COLORS}
+[ -n "$PROMPT_COLORS" ] && exec_args+=(-e "RYAD_PROMPT_COLORS=$PROMPT_COLORS")
+# The X display number can change between logins.
+[ "${ENV[display]}" != none ] && [ -n "${DISPLAY:-}" ] && exec_args+=(-e "DISPLAY=$DISPLAY")
+
+if [ "$DETACH" = 1 ]; then
+  # In the background: output to ~/$LOGDIR/<cmd>.log, exit status to <cmd>.status.
+  app=$(basename -- "${RUN[0]}"); app=${app//[^A-Za-z0-9_.-]/_}
+  log=$PDIR/home/$LOGDIR/$app.log st=$PDIR/home/$LOGDIR/$app.status
+  rm -f "$st"
+  start=$(stat -c %s "$log" 2>/dev/null || echo 0)   # where this run's output begins
+  podman exec -d "${exec_args[@]}" "$C" bash -c '
+    d=$HOME/'"$LOGDIR"'; mkdir -p "$d"
+    printf "== %s: %s\n" "$(date "+%F %T")" "$*" >>"$d/$0.log"
+    "$@" >>"$d/$0.log" 2>&1; echo $? >"$d/$0.status"' "$app" "${RUN[@]}" >/dev/null
+  # Report a command that fails right away (e.g. an app already open elsewhere).
+  for _ in $(seq 10); do [ -e "$st" ] && break; sleep 0.1; done
+  if [ -e "$st" ] && [ "$(cat "$st")" != 0 ]; then
+    note "$app exited with status $(cat "$st"); its output (in $(tilde "$log")):"
+    tail -c +$((start + 1)) "$log" | tail -n 20 >&2
+    exit 1
+  fi
+  note "started $app in '$NAME' (log: $(tilde "$log"))"
+  exit 0
+fi
+
+[ ${#RUN[@]} -gt 0 ] || RUN=(bash -l)
+if [ -t 0 ] && [ -t 1 ]; then
+  exec podman exec -it "${exec_args[@]}" "$C" "${RUN[@]}"
+else
+  exec podman exec -i "${exec_args[@]}" "$C" "${RUN[@]}"
+fi
