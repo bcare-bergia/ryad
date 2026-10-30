@@ -3,6 +3,11 @@
 # home directory is the profile; Pi keeps its settings and logins in ~/.pi).
 # Needs Node.js >= 22.19: the distro's if recent enough (Ubuntu 26.04), else
 # the current Node.js 22 LTS from nodejs.org, used by pi only.
+#
+# @description Pi coding agent (terminal)
+# @commands pi
+# @needs firefox
+# @latest curl -fsSL https://registry.npmjs.org/@earendil-works/pi-coding-agent/latest | jq -r .version
 . "$(dirname "$0")/lib.sh"
 
 PKG=@earendil-works/pi-coding-agent

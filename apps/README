@@ -6,8 +6,12 @@ plain apt package from the base distribution (it needs its own apt repository,
 a downloaded .deb, a tarball, ...). Plain distro packages belong in
 packages/*.list instead.
 
-Enable an app by adding <name> to APPS in build.conf (or --apps=...).
+`ryad apps` lists the apps; `ryad apps add|rm <name>` picks them (it edits
+APPS in ~/.config/ryad/build.conf); `ryad apps new <name>` writes your own
+installer in ~/.config/ryad/apps/, from a template. Your own apps are
+installed unless APPS removes them (-name).
 claude-desktop and claude-code are always installed, in their own layers.
+Each other app gets its own layer, in the order of APPS.
 
 Contract
 --------
@@ -16,14 +20,35 @@ Contract
   $CODENAME, $ID, log/die, apt_clean and set_default_handler.
 - Must work on any Debian/Ubuntu base (read /etc/os-release, never hard-code
   a codename).
+- Installs system-wide (/opt, /usr/local, ...), never under /home: at runtime
+  the home directory is the profile.
 - Version: read ${<NAME>_VERSION} where <NAME> is the app name upper-cased,
-  '-' replaced by '_' (e.g. RSTUDIO_VERSION). Treat empty or "latest" as
-  "newest available". Any FOO_VERSION=... line in build.conf is passed to app
-  scripts automatically.
+  '-' and '.' replaced by '_' (e.g. RSTUDIO_VERSION). Treat empty or "latest"
+  as "newest available". Any FOO_VERSION=... line in build.conf is passed to
+  app scripts automatically.
 - Ends with apt_clean if it used apt.
+
+Header lines
+------------
+Comment lines of the form "# @key value" describe the app to ryad:
+
+  # @description TEXT      one line, shown by `ryad apps`
+  # @commands CMD...       the commands it adds (`ryad apps`, shell banner)
+  # @needs APP...          apps it relies on (e.g. firefox, for sign-in
+                           pages); ryad warns when one isn't installed
+  # @latest COMMAND        prints the newest version, on one line. Run by
+                           `ryad build` before building, in a throwaway
+                           container of the previous image (it has curl and
+                           jq), with BASE_ID, BASE_VERSION, BASE_CODENAME and
+                           DEB_ARCH set for the image being built. The result
+                           is passed as <NAME>_VERSION, so a new release
+                           rebuilds the app's layer. Without it, "latest" is
+                           only looked up again by `ryad build --refresh`.
 
 Minimal example (apps/foo.sh):
 
+    # @description Foo, a command-line agent
+    # @commands foo
     . "$(dirname "$0")/lib.sh"
     curl -fsSL https://example.com/key.asc -o /usr/share/keyrings/foo.asc
     echo "deb [signed-by=/usr/share/keyrings/foo.asc] https://example.com/apt stable main" \

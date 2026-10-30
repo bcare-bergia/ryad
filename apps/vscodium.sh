@@ -1,4 +1,7 @@
 # VSCodium (open-source VS Code build) from its apt repository.
+#
+# @description VSCodium, the open-source build of VS Code
+# @commands codium
 . "$(dirname "$0")/lib.sh"
 
 curl -fsSL https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/raw/master/pub.gpg \

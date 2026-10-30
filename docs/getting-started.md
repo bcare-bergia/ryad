@@ -69,7 +69,7 @@ This creates an environment named after the folder ("acme"), with the profile `d
 | `emacs` | Emacs |
 | `firefox` | Firefox |
 
-Use any of them, or none: the environment is a normal Linux shell, and you can [add other tools](customization.md) to the image.
+Use any of them, or none: the environment is a normal Linux shell. `ryad apps` lists the apps; you can [remove some, or add your own](customization.md#choose-the-apps).
 
 To use another profile, say one for your work account, pass it the first time:
 

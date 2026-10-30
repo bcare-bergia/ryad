@@ -1,5 +1,8 @@
 # Firefox from Mozilla's apt repository (Ubuntu's own "firefox" is a snap stub).
 # Used as the in-container browser for OAuth sign-in (claude /login, Claude Desktop).
+#
+# @description Firefox web browser; opens the other apps' sign-in pages
+# @commands firefox
 . "$(dirname "$0")/lib.sh"
 
 install -d -m 0755 /etc/apt/keyrings

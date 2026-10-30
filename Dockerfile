@@ -5,7 +5,8 @@
 # Claude only rebuilds the last two layers:
 #   1. apt packages from packages/*.list
 #   2. user account
-#   3. third-party apps (apps/<name>.sh, selected by APPS)
+#   3. third-party apps (apps/<name>.sh, selected by APPS); "ryad build" replaces
+#      the block between @apps-begin and @apps-end with one layer per app
 #   4. Claude Desktop
 #   5. Claude Code
 
@@ -50,6 +51,10 @@ RUN set -eu; \
     install -d -m 0700 -o claude -g claude /run/user/1000
 
 # --- 3. third-party apps ----------------------------------------------------
+# @apps-begin
+# All apps in one layer. "ryad build" replaces this block with one layer per
+# app (COPY apps/lib.sh apps/<name>.sh, ARG <NAME>_VERSION, RUN), so adding,
+# removing or upgrading one app doesn't reinstall the others.
 COPY apps/ /opt/ryad/apps/
 ARG APPS="firefox vscodium rstudio antigravity pi"
 # Space-separated NAME_VERSION=value pairs, exported to app scripts.
@@ -59,16 +64,31 @@ RUN set -eu; \
       [ -f "/opt/ryad/apps/$app.sh" ] || { echo "unknown app: $app" >&2; exit 1; }; \
       echo "### installing $app"; \
       env $APP_VERSIONS bash "/opt/ryad/apps/$app.sh"; \
-    done; \
-    : > /etc/ryad-release
+    done
+# @apps-end
 
 # --- 4. Claude Desktop ------------------------------------------------------
+COPY apps/lib.sh apps/claude-desktop.sh /opt/ryad/apps/
 ARG CLAUDE_DESKTOP_VERSION=latest
 RUN bash /opt/ryad/apps/claude-desktop.sh
 
 # --- 5. Claude Code ---------------------------------------------------------
+COPY apps/lib.sh apps/claude-code.sh /opt/ryad/apps/
 ARG CLAUDE_CODE_VERSION=latest
 RUN bash /opt/ryad/apps/claude-code.sh
+
+# The installed apps, for the shell banner and "ryad apps":
+# name<TAB>commands<TAB>description, from the @commands/@description lines of
+# their scripts. Declared here so that changing APPS doesn't invalidate the
+# layers above.
+ARG APPS="firefox vscodium rstudio antigravity pi"
+RUN set -eu; \
+    mkdir -p /etc/ryad; \
+    for app in claude-code claude-desktop $APPS; do \
+      f=/opt/ryad/apps/$app.sh; \
+      printf '%s\t%s\t%s\n' "$app" "$(sed -n 's/^# @commands //p' "$f" | head -n1)" \
+        "$(sed -n 's/^# @description //p' "$f" | head -n1)"; \
+    done > /etc/ryad/apps.list
 
 LABEL org.ryad.base-image="${BASE_IMAGE}" \
       org.ryad.apps="${APPS}" \

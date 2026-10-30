@@ -42,7 +42,7 @@ You are running the unbundled `ryad` from the repository. Use `./build.sh`, or i
 
 ## A tool I installed is gone
 
-Tools installed with `sudo apt install` inside an environment live in its container filesystem, which `recreate` discards. [Add them to the image](customization.md#add-apt-packages) instead.
+Tools installed with `sudo apt install` inside an environment live in its container filesystem, which `recreate` discards. Add them to the image instead: [a package list](customization.md#add-apt-packages) for distro packages, `ryad apps new` for [anything else](customization.md#add-a-third-party-app).
 
 ## Getting more information
 

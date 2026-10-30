@@ -1,6 +1,11 @@
 # Google Antigravity (desktop app) from Google's release tarball, in /opt/antigravity.
 # https://antigravity.google/download?os=linux
 # (The older apt repository only has the legacy 1.x IDE.)
+#
+# @description Google Antigravity, agent-first IDE
+# @commands antigravity
+# @needs firefox
+# @latest curl -fsSL https://antigravity-hub-auto-updater-974169037036.us-central1.run.app/releases | jq -r '.[0].version'
 . "$(dirname "$0")/lib.sh"
 
 RELEASES=https://antigravity-hub-auto-updater-974169037036.us-central1.run.app/releases

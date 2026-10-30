@@ -59,7 +59,7 @@ A *riad* is a traditional house built around an inner courtyard: open on the ins
 | **Browser** | Firefox, for sign-in pages and anything else that needs one |
 | **Toolchains** | git, Python, Node.js, R, build-essential, ripgrep… |
 
-GUI apps started inside the sandbox open on your normal Wayland or X11 desktop. Every app except Claude Code and Claude Desktop can be left out, and you can [add your own](docs/customization.md#add-a-third-party-app).
+GUI apps started inside the sandbox open on your normal Wayland or X11 desktop. Every app except Claude Code and Claude Desktop can be left out (`ryad apps rm rstudio`), and you can [add your own](docs/customization.md#add-a-third-party-app) (`ryad apps new mytool`).
 
 ## Try it
 

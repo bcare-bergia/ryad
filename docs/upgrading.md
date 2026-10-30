@@ -32,7 +32,7 @@ ryad build --refresh
 ryad recreate --outdated
 ```
 
-It also picks up new releases of the apps whose `latest` version isn't looked up at each build (Pi, VSCodium, Firefox).
+It also picks up new releases of the apps whose `latest` version isn't looked up at each build: those whose installer has no `# @latest` line, such as VSCodium and Firefox.
 
 `--no-cache` rebuilds every layer from scratch.
 

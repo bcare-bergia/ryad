@@ -22,7 +22,7 @@ LBL=org.ryad
 CUID=1000                            # UID of the user inside the image (renamed per environment)
 CRUN=/run/user/$CUID
 LOGDIR=.cache/ryad/logs              # in the profile home: output of --detach commands
-SUBCOMMANDS=" list stop rm recreate info profiles versions prune build completion help "
+SUBCOMMANDS=" list stop rm recreate info profiles apps versions prune build completion help "
 ALIASES=" ls:list remove:rm delete:rm enter:enter start:enter shell:enter "   # alias:subcommand
 VALUE_OPTS=" --profile --workspace --image --display --user --hostname "
 # Options each subcommand takes (besides --help); the completion script uses it too.
@@ -34,6 +34,7 @@ declare -A OPTS=(
   [recreate]="--outdated --all --profile= --workspace= --image= --display= --no-gpu --user= --hostname= --allow-unsafe-workspace --yes"
   [info]=""
   [profiles]="--yes"
+  [apps]="--yes --quiet"
   [versions]="--image="
   [prune]="--yes"
   [build]="--check --refresh --no-cache --code-version= --desktop-version= --rstudio-version= --apps= --packages= --base-image= --image-name= --config= --context= --export="
@@ -47,8 +48,8 @@ Usage:
   $PROG [NAME] [options] [-- CMD [ARGS...]]
       Enter environment NAME: create it if needed, start it if stopped, and open
       a shell in it (or run CMD). Run it again in another terminal for another
-      shell in the same environment. Start apps from the shell:
-      pi, antigravity, claude, claude-desktop, codium, rstudio, emacs, firefox.
+      shell in the same environment. Start apps from the shell, by their
+      command (e.g. claude, pi, codium; the list: $PROG apps).
       Without NAME: the environment of the current folder or of the closest
       parent folder (on --profile, if given), else a new one named after the
       folder. A NAME that doesn't exist is only created after you confirm (or
@@ -72,6 +73,11 @@ Usage:
   $PROG profiles path NAME             print the profile's folder
   $PROG profiles rm NAME... [--yes]    delete profiles: logins, settings and history (no
                                       environment may use them)
+  $PROG apps [list] [-q]               apps of the image: installed, available, pending
+                                      (-q: names only)
+  $PROG apps add|rm APP... [--yes]     add or remove apps (saved in build.conf), then
+                                      offer to rebuild the image and recreate
+  $PROG apps new APP                   write an installer for your own app, in \$EDITOR
   $PROG versions [NAME | --image=IMG]  app versions in an environment's image (default: $DEFAULT_IMAGE)
   $PROG prune [--yes]                  remove ryad images no container uses (except :latest)
   $PROG build [options]                build the image (see: $PROG build --help)
@@ -96,7 +102,7 @@ Other options:
   -y, --yes              don't ask for confirmation
   -f, --force            rm: stop running environments first (same as --yes)
   -d, --detach           start CMD in the background
-  -q, --quiet            list: names only
+  -q, --quiet            list, apps list: names only
 
 Profiles live in $PROFILES_DIR/<name>/:
   home/          the container's home directory (logins, settings, history)
@@ -154,6 +160,12 @@ confirm() { # PROMPT: ask [y/N]; exits unless the answer is yes (--yes skips the
   read -r -p "$1 [y/N] " ans
   [[ $ans =~ ^[Yy] ]] || die "aborted"
 }
+ask() { # PROMPT: ask [y/N]; fails unless the answer is yes (--yes: yes; no terminal: no)
+  [ "$YES" = 1 ] && return 0
+  [ -t 0 ] || return 1
+  read -r -p "$1 [y/N] " ans
+  [[ $ans =~ ^[Yy] ]]
+}
 
 # Names of the environments ([podman ps options], e.g. -a). Containers whose
 # name doesn't match their label (a half-done recreate) are skipped.
@@ -176,9 +188,10 @@ env_rows() {
     --format "{{.Names}}$T$(lbl name)$T{{.State}}$T$(lbl profile)$T$(lbl workspace)$T$(lbl image)$T{{.ImageID}}") | sort
 }
 
-# Existing environment names close to NAME (prefix, or edit distance <= 2), comma-separated.
-similar_envs() {
-  env_names -a | awk -v t="$1" '
+# similar WORD: the lines of stdin close to WORD (prefix, or edit distance <= 2),
+# comma-separated.
+similar() {
+  awk -v t="$1" '
     function dist(a, b,   la, lb, i, j, d, x) {
       la = length(a); lb = length(b)
       for (i = 0; i <= la; i++) d[i, 0] = i
@@ -196,6 +209,7 @@ similar_envs() {
       printf "%s%s", (n++ ? ", " : ""), $0
     }'
 }
+similar_envs() { env_names -a | similar "$1"; }   # existing environment names close to NAME
 
 # check_envs NAME...: exit, with suggestions, unless they all exist. The last
 # one is left loaded in ENV.
@@ -428,6 +442,383 @@ recreate_env() {
   podman rename "$new" "$c" || die "could not rename $new to $c; run: podman rename $new $c"
 }
 
+# recreate_many ALL: recreate the environments on an older build (ALL=1: all of
+# them), after one confirmation.
+recreate_many() {
+  local all=$1 n s p w i o targets=() lines=()
+  while IFS=$'\t' read -r n s p w i o; do
+    [ "$all" = 1 ] || [ "$o" = 1 ] || continue
+    targets+=("$n")
+    lines+=("$(printf '  %-16s %-8s %s' "$n" "$s" "$([ "$s" != running ] || echo '(its shells and apps will be closed)')")")
+  done < <(env_rows)
+  if [ ${#targets[@]} -eq 0 ]; then
+    if [ "$all" = 1 ]; then note "no environments"; else note "nothing to recreate: all environments are on their current image"; fi
+    return 0
+  fi
+  if [ "$YES" = 0 ]; then
+    echo "Recreate these environments:"
+    printf '%s\n' "${lines[@]}"
+    echo "Changes made inside the containers (e.g. packages installed with sudo) are lost;"
+    echo "profiles and workspaces are kept."
+  fi
+  confirm "Continue?"
+  for n in "${targets[@]}"; do recreate_settings "$n"; recreate_env "$n"; done
+  note "enter them with: $PROG NAME"
+}
+
+# --- apps ------------------------------------------------------------------------------
+# Apps are installed in the image by apps/<name>.sh: the built-in ones, from the
+# build files, and yours, from $CONFIG_ROOT/apps (one named like a built-in one
+# replaces it). Their header can describe them, in lines of the form:
+#   # @description TEXT        one line, for 'ryad apps' and the shell banner
+#   # @commands CMD...         the commands it adds
+#   # @needs APP...            apps it relies on (e.g. firefox, for sign-in pages)
+#   # @latest SHELL-COMMAND    prints its newest version (see lookup_versions)
+# APPS (build.conf, --apps) picks them: names replace the list, then +name
+# adds one and -name removes one. Your own apps are added unless removed.
+ALWAYS_APPS="claude-code claude-desktop"   # in their own layers, whatever APPS says
+APP_RE='^[a-z0-9][a-z0-9_.-]*$'
+APPS_COMMENT="# Apps: changes to the built-in list (+name adds an app, -name removes one)."
+
+# unpack_build_files DIR [CONTEXT]: copy the build files to DIR, from CONTEXT, or
+# else from the ones embedded in this script.
+unpack_build_files() {
+  local dir=$1 ctx=${2:-} f
+  if [ -n "$ctx" ]; then
+    [ -f "$ctx/Dockerfile" ] || die "no Dockerfile in $ctx"
+    for f in $BUILD_FILES; do [ ! -e "$ctx/$f" ] || cp -a "$ctx/$f" "$dir/"; done
+  elif has_bundle; then
+    awk -v m="$MARKER" 'f { print } $0 == m { f = 1 }' "$SELF" | base64 -d | tar -xz -C "$dir"
+  else
+    die "this ryad has no embedded build files (it's the unbundled source); use --context=DIR, or make a bundle with bundle.sh"
+  fi
+}
+
+# load_apps DIR: the apps there are in build files DIR (unpacked, without your
+# additions). Sets BF=DIR, BUILTIN_APPS and CUSTOM_APPS (yours that aren't built in).
+load_apps() {
+  local f n
+  BF=$1 BUILTIN_APPS="" CUSTOM_APPS=""
+  for f in "$BF"/apps/*.sh; do
+    n=$(basename "$f" .sh)
+    case " lib $ALWAYS_APPS " in *" $n "*) continue ;; esac
+    BUILTIN_APPS+="$n "
+  done
+  for f in "$CONFIG_ROOT"/apps/*.sh; do
+    [ -f "$f" ] || continue
+    n=$(basename "$f" .sh)
+    case " lib $ALWAYS_APPS $BUILTIN_APPS" in *" $n "*) continue ;; esac
+    if [[ $n =~ $APP_RE ]]; then CUSTOM_APPS+="$n "
+    else note "ignoring $(tilde "$f"): app names are lowercase letters, digits, . _ and -"; fi
+  done
+}
+app_script() { # NAME: its installer, yours first
+  if [ -f "$CONFIG_ROOT/apps/$1.sh" ]; then echo "$CONFIG_ROOT/apps/$1.sh"; else echo "$BF/apps/$1.sh"; fi
+}
+app_meta() { sed -n "s/^# @$2 //p" "$(app_script "$1")" 2>/dev/null | head -n1; }   # NAME KEY
+app_var() { local v=${1^^}; echo "${v//[-.]/_}_VERSION"; }   # NAME: its version setting
+
+# check_app NAME [WHERE]: exit unless NAME is an app APPS can pick.
+check_app() {
+  local s
+  case " $ALWAYS_APPS " in *" $1 "*) die "${2:+$2: }$1 is always installed; it can't be added or removed" ;; esac
+  case " $BUILTIN_APPS$CUSTOM_APPS" in *" $1 "*) return 0 ;; esac
+  s=$(printf '%s\n' $BUILTIN_APPS $CUSTOM_APPS | similar "$1")
+  die "${2:+$2: }no app '$1'${s:+ (did you mean: $s?)} (see: $PROG apps)"
+}
+
+# apps_apply VALUE WHERE: apply an APPS value to APP_CUR (" a b "); APP_OFF
+# collects the apps removed with -name.
+apps_apply() {
+  local t n bare=0
+  local -a toks=()
+  read -ra toks <<<"$1"
+  for t in ${toks[@]+"${toks[@]}"}; do case $t in [+-]*) ;; *) bare=1 ;; esac; done
+  if [ $bare = 1 ] || [ ${#toks[@]} -eq 0 ]; then APP_CUR=" "; fi
+  for t in ${toks[@]+"${toks[@]}"}; do
+    n=${t#[+-]}
+    check_app "$n" "$2"
+    case $t in
+      -*) APP_CUR=${APP_CUR/ $n / } APP_OFF+="$n " ;;
+      *) [[ $APP_CUR == *" $n "* ]] || APP_CUR+="$n "; APP_OFF=${APP_OFF/ $n / } ;;
+    esac
+  done
+}
+
+# load_build_settings CONFIG APPS_OPT APPS_SET: read the settings files (the
+# built-in build.conf, yours, CONFIG) into the shell, then the --apps option
+# (if APPS_SET=1). Sets CONFS (the files read), DEFAULT_APPS (the built-in list)
+# and APP_LIST: the apps to install, the built-in ones first and in the
+# built-in order, so that their layers stay cached. Needs load_apps first.
+load_build_settings() {
+  local f before n
+  CONFS=("$BF/build.conf")
+  [ ! -f "$CONFIG_ROOT/build.conf" ] || CONFS+=("$CONFIG_ROOT/build.conf")
+  [ -z "$1" ] || CONFS+=("$1")
+  APP_CUR=" " APP_OFF=" " DEFAULT_APPS=""
+  for f in "${CONFS[@]}"; do
+    # Each file sees the list so far, so that APPS="$APPS foo" works too.
+    before=${APP_CUR# } before=${before% }
+    APPS=$before
+    # shellcheck disable=SC1090
+    . "$f"
+    [ "$APPS" = "$before" ] || apps_apply "$APPS" "$(tilde "$f")"
+    [ -n "$DEFAULT_APPS" ] || DEFAULT_APPS=$APP_CUR
+  done
+  [ "$3" = 0 ] || apps_apply "$2" --apps
+  for n in $CUSTOM_APPS; do
+    [[ $APP_OFF == *" $n "* ]] || [[ $APP_CUR == *" $n "* ]] || APP_CUR+="$n "
+  done
+  APP_LIST=()
+  for n in $DEFAULT_APPS $APP_CUR; do
+    if [[ $APP_CUR == *" $n "* ]] && [[ " ${APP_LIST[*]-} " != *" $n "* ]]; then APP_LIST+=("$n"); fi
+  done
+  APPS=${APP_LIST[*]-}
+}
+
+# apps_check_needs: warn about apps that need one that won't be installed (@needs).
+apps_check_needs() {
+  local n d all=" $ALWAYS_APPS ${APP_LIST[*]-} "
+  local -A users=()
+  for n in $ALWAYS_APPS ${APP_LIST[@]+"${APP_LIST[@]}"}; do
+    for d in $(app_meta "$n" needs); do
+      [[ $all == *" $d "* ]] || users[$d]+="${users[$d]:+, }$n"
+    done
+  done
+  for d in "${!users[@]}"; do
+    note "warning: $d won't be installed, but ${users[$d]} need$([[ ${users[$d]} == *,* ]] || echo s) it (to add it: $PROG apps add $d)"
+  done
+}
+
+# lookup_versions IMAGE BASE_ID BASE_VERSION BASE_CODENAME DEB_ARCH: for each app
+# whose <NAME>_VERSION is "latest" and whose script has an "@latest" line, run
+# that line to set <NAME>_VERSION to the newest version, so that a new release
+# changes the build args and rebuilds that app's layer. The lines run in a
+# throwaway container of IMAGE (a previous build: it has curl and jq), with the
+# BASE_* and DEB_ARCH variables of the image being built. Without IMAGE (first
+# build), the scripts resolve "latest" themselves.
+lookup_versions() {
+  local img=$1 n var cmd script="" i=0 out v
+  for n in ${APP_LIST[@]+"${APP_LIST[@]}"}; do
+    var=$(app_var "$n")
+    [ "${!var:-latest}" = latest ] || continue
+    cmd=$(app_meta "$n" latest)
+    [ -n "$cmd" ] || continue
+    script+="l$i() {"$'\n'"$cmd"$'\n'"}"$'\n'"printf '%s\\t%s\\n' $n \"\$(l$i 2>/dev/null | head -n1)\""$'\n'
+    i=$((i + 1))
+  done
+  [ $i -gt 0 ] && podman image exists "$img" || return 0
+  out=$(podman run --rm -i --pull=never --entrypoint bash \
+    -e "BASE_ID=$2" -e "BASE_VERSION=$3" -e "BASE_CODENAME=$4" -e "DEB_ARCH=$5" \
+    "$img" -s <<<"curl() { command curl --max-time 30 \"\$@\"; }"$'\n'"$script") \
+    || { note "warning: could not look up the latest app versions; the build resolves them, from cache"; return 0; }
+  while IFS=$'\t' read -r n v; do
+    [ -n "$n" ] || continue
+    var=$(app_var "$n")
+    if [[ $v =~ ^[A-Za-z0-9][A-Za-z0-9._+~:-]*$ ]]; then printf -v "$var" '%s' "$v"
+    else note "warning: could not look up the latest $n version; the build resolves it, from cache"; fi
+  done <<<"$out"
+}
+
+# per_app_layers DOCKERFILE: replace its block between "# @apps-begin" and
+# "# @apps-end" with one layer per app of APP_LIST. Fails if it has no such block.
+per_app_layers() {
+  local df=$1 n var
+  grep -qx '# @apps-begin' "$df" && grep -qx '# @apps-end' "$df" || return 1
+  {
+    echo "# One layer per app (written by ryad build)."
+    for n in ${APP_LIST[@]+"${APP_LIST[@]}"}; do
+      var=$(app_var "$n")
+      printf 'COPY apps/lib.sh apps/%s.sh /opt/ryad/apps/\nARG %s=latest\nRUN bash /opt/ryad/apps/%s.sh\n' "$n" "$var" "$n"
+    done
+  } > "$df.apps"
+  awk -v f="$df.apps" '
+    $0 == "# @apps-begin" { while ((getline l < f) > 0) print l; skip = 1; next }
+    $0 == "# @apps-end" { skip = 0; next }
+    !skip' "$df" > "$df.new"
+  mv "$df.new" "$df"; rm -f "$df.apps"
+}
+
+# apps_list: the apps, whether the image has them, and the changes pending.
+apps_list() {
+  local img=$IMAGE_NAME:latest built=" " have=0 n st src rows="" pending=0 seen=" " outdated
+  if [ "$QUIET" = 1 ]; then printf '%s\n' $BUILTIN_APPS $CUSTOM_APPS; return 0; fi
+  if podman image exists "$img"; then
+    have=1 built=" $(podman image inspect -f "{{ index .Labels \"$LBL.apps\" }}" "$img") "
+  fi
+  for n in $ALWAYS_APPS $DEFAULT_APPS $BUILTIN_APPS $CUSTOM_APPS $built; do
+    [[ $seen != *" $n "* ]] || continue
+    seen+="$n "
+    if [[ " $ALWAYS_APPS " == *" $n "* ]]; then st=always
+    elif [ $have = 0 ]; then st=$([[ " $APPS " == *" $n "* ]] && echo selected || echo -)
+    else
+      case $([[ " $APPS " == *" $n "* ]] && echo 1 || echo 0)$([[ $built == *" $n "* ]] && echo 1 || echo 0) in
+        11) st=installed ;;
+        10) st="added at next build" pending=1 ;;
+        01) st="removed at next build" pending=1 ;;
+        00) st=- ;;
+      esac
+    fi
+    if [ -f "$CONFIG_ROOT/apps/$n.sh" ]; then
+      if [ -f "$BF/apps/$n.sh" ]; then src="yours (replaces built-in)"; else src=yours; fi
+    elif [ -f "$BF/apps/$n.sh" ]; then src=built-in
+    else src="(no installer)"; fi
+    rows+="$n$T$st$T$src$T$(app_meta "$n" commands)$T$(app_meta "$n" description)"$'\n'
+  done
+  { printf 'APP\tSTATUS\tSOURCE\tCOMMANDS\tDESCRIPTION\n'; printf '%s' "$rows"; } | column -t -s "$T"
+  echo
+  if [ $have = 0 ]; then
+    echo "Image $img not built yet: $PROG build"
+  elif [ $pending = 1 ]; then
+    echo "To apply the pending changes: $PROG build, then $PROG recreate --outdated"
+  else
+    outdated=$(env_rows | awk -F'\t' '$6 == 1' | wc -l)
+    [ "$outdated" = 0 ] || echo "$outdated environment(s) on an older build: $PROG recreate --outdated"
+  fi
+  echo "To add or remove one: $PROG apps add|rm APP; to write your own: $PROG apps new APP"
+  apps_check_needs
+}
+
+# apps_edit add|rm APP...: change APPS in your build.conf, in the form it has (a
+# list, or changes to the built-in list), then offer to apply the change.
+apps_edit() {
+  local action=$1 f=$CONFIG_ROOT/build.conf ln=0 line val="" rest="" bare=0 t n dflt new tmpf changed=0
+  local -a hits=() toks=() keep=()
+  local q="'"
+  local re1='^[[:space:]]*APPS="([^"$`\\]*)"[[:space:]]*(#.*)?$'
+  local re2="^[[:space:]]*APPS=$q([^$q]*)$q[[:space:]]*(#.*)?\$"
+  local re3='^[[:space:]]*APPS=([^[:space:]"'"$q"'$`\\#]*)[[:space:]]*(#.*)?$'
+  shift
+  [ $# -gt 0 ] || die "usage: $PROG apps $action APP..."
+  if [ -f "$f" ]; then
+    mapfile -t hits < <(grep -nE '^[[:space:]]*(export[[:space:]]+)?APPS=' "$f" || true)
+    [ ${#hits[@]} -le 1 ] || die "APPS is set more than once in $(tilde "$f"); edit it by hand"
+    if [ ${#hits[@]} -eq 1 ]; then
+      ln=${hits[0]%%:*} line=${hits[0]#*:}
+      if [[ $line =~ $re1 ]] || [[ $line =~ $re2 ]] || [[ $line =~ $re3 ]]; then
+        val=${BASH_REMATCH[1]} rest=${BASH_REMATCH[2]}
+      else
+        die "can't change APPS in $(tilde "$f") (line $ln) safely; edit it by hand"
+      fi
+    fi
+  fi
+  read -ra toks <<<"$val"
+  for t in ${toks[@]+"${toks[@]}"}; do case $t in [+-]*) ;; *) bare=1 ;; esac; done
+  [ $ln = 0 ] || [ ${#toks[@]} -gt 0 ] || bare=1   # APPS="": an empty list
+  for n; do
+    check_app "$n"
+    case $action in
+      add) [[ " $APPS " != *" $n "* ]] || { note "$n is already installed or selected"; continue; } ;;
+      rm) [[ " $APPS " == *" $n "* ]] || { note "$n is not installed nor selected"; continue; } ;;
+    esac
+    # Drop what the line says about the app, then say what's needed, if anything:
+    # in a list, only your own apps are there without being named.
+    keep=()
+    for t in ${toks[@]+"${toks[@]}"}; do [ "${t#[+-]}" = "$n" ] || keep+=("$t"); done
+    toks=(${keep[@]+"${keep[@]}"})
+    if [ $bare = 1 ]; then dflt=" $CUSTOM_APPS"; else dflt=" $DEFAULT_APPS $CUSTOM_APPS"; fi
+    case $action in
+      add) [[ $dflt == *" $n "* ]] || toks+=("$([ $bare = 1 ] || echo +)$n") ;;
+      rm) [[ $dflt != *" $n "* ]] || toks+=("-$n") ;;
+    esac
+    changed=1
+  done
+  [ $changed = 1 ] || return 0
+
+  new=${toks[*]-}
+  mkdir -p "$CONFIG_ROOT"
+  if [ $ln = 0 ]; then
+    [ -f "$f" ] || printf '# Your settings for "%s build", read after the built-in ones (see: %s build --help).\n' "$PROG" "$PROG" > "$f"
+    printf '\n%s\nAPPS="%s"\n' "$APPS_COMMENT" "$new" >> "$f"
+  else
+    tmpf=$(mktemp "$f.XXXXXX")
+    if [ -z "$new" ] && [ $bare = 0 ]; then
+      # Back to the built-in list: drop the line, and the comment written with it.
+      C="$APPS_COMMENT" awk -v n="$ln" '
+        { l[NR] = $0 }
+        END {
+          d[n] = 1
+          if (l[n - 1] == ENVIRON["C"]) { d[n - 1] = 1; if (l[n - 2] == "") d[n - 2] = 1 }
+          for (i = 1; i <= NR; i++) if (!(i in d)) print l[i]
+        }' "$f" > "$tmpf"
+    else
+      L="APPS=\"$new\"${rest:+  $rest}" awk -v n="$ln" 'NR == n { print ENVIRON["L"]; next } { print }' "$f" > "$tmpf"
+    fi
+    cat "$tmpf" > "$f"; rm -f "$tmpf"
+  fi
+  load_build_settings "" "" 0
+  if [ -z "$new" ] && [ $bare = 0 ]; then note "removed APPS from $(tilde "$f"): back to the built-in list"
+  else note "saved in $(tilde "$f"): APPS=\"$new\""; fi
+  echo "Apps: $ALWAYS_APPS${APPS:+ $APPS}"
+  apps_check_needs
+  [ "$action" = add ] || note "the settings and logins of removed apps stay in the profiles' home folders"
+  if ask "Build the image now, then recreate the environments on an older build?"; then
+    rm -rf "$BF"
+    build_main ${APPS_CTX:+--context="$APPS_CTX"}
+    recreate_many 0
+  else
+    note "to apply it: $PROG build, then $PROG recreate --outdated"
+  fi
+}
+
+# apps_new APP: write your installer for APP, from a template (or from the
+# built-in one it would replace), and open it in the editor.
+apps_new() {
+  local n=${1:-} f orig editor
+  [ $# -eq 1 ] || die "usage: $PROG apps new APP"
+  [[ $n =~ $APP_RE ]] && [ "$n" != lib ] || die "invalid app name '$n' (lowercase letters, digits, . _ and -; not lib)"
+  f=$CONFIG_ROOT/apps/$n.sh
+  [ ! -e "$f" ] || die "$(tilde "$f") already exists; edit it, then: $PROG build"
+  mkdir -p "$CONFIG_ROOT/apps"
+  if [ -f "$BF/apps/$n.sh" ]; then
+    cp "$BF/apps/$n.sh" "$f"
+    note "copied the built-in installer of '$n' to $(tilde "$f"): yours replaces it"
+  else
+    sed -e "s/@NAME@/$n/g" -e "s/@VAR@/$(app_var "$n")/g" > "$f" <<'TEMPLATE'
+# @NAME@: <what it is, where it comes from>.
+# Runs as root during 'ryad build', with bash. Install system-wide (/opt,
+# /usr/local), never under /home: at runtime the home directory is the profile.
+# The full contract: apps/README ('ryad build --export DIR' writes it out).
+#
+# @description <one line, shown by 'ryad apps' and in the shell banner>
+# @commands @NAME@
+# Optional lines (to use one, remove the extra space after the #):
+#  @needs firefox      apps this one relies on (firefox opens sign-in pages)
+#  @latest curl -fsSL https://example.com/latest-version
+#                      prints the newest version: run before each build, so
+#                      that a new release gets installed
+. "$(dirname "$0")/lib.sh"
+
+v=${@VAR@:-latest}   # set @VAR@=X.Y.Z in build.conf to pin a version
+
+# For instance, from an apt repository:
+# curl -fsSL https://example.com/key.asc -o /usr/share/keyrings/@NAME@.asc
+# echo "deb [signed-by=/usr/share/keyrings/@NAME@.asc] https://example.com/apt stable main" \
+#   > /etc/apt/sources.list.d/@NAME@.list
+# apt-get update
+# apt-get install -y --no-install-recommends "@NAME@$([ "$v" = latest ] || echo "=$v")"
+# apt_clean
+
+log "installed @NAME@ $v"
+TEMPLATE
+  fi
+  orig=$(cat "$f")
+  editor=${VISUAL:-${EDITOR:-vi}}
+  # Unquoted: the editor command may have arguments (e.g. "code -w").
+  # shellcheck disable=SC2086
+  $editor "$f" || die "$editor exited with an error (the file is left in $(tilde "$f"))"
+  if [ "$(cat "$f")" = "$orig" ]; then
+    rm -f "$f"; note "unchanged, so not kept"; return 0
+  fi
+  note "saved $(tilde "$f")"
+  load_apps "$BF"; load_build_settings "" "" 0
+  if [[ " $ALWAYS_APPS $APPS " == *" $n "* ]]; then
+    note "it's installed by the next build: $PROG build, then $PROG recreate --outdated"
+  else
+    note "to install it: $PROG apps add $n"
+  fi
+}
+
 # --- build -----------------------------------------------------------------------------
 build_usage() {
   cat <<USAGE
@@ -437,8 +828,8 @@ Builds the image from the build files embedded in this ryad (or from --context),
 plus your own additions in $(tilde "$CONFIG_ROOT")/:
   build.conf        settings, as in the embedded build.conf (APPS=, EXTRA_PACKAGES=, versions)
   packages/*.list   extra apt package lists (a file named like a built-in one replaces it)
-  apps/*.sh         extra app installers, installed without listing them in APPS
-                    (named like a built-in one: replaces it)
+  apps/*.sh         your app installers, installed unless APPS removes them (-name)
+                    (named like a built-in one: replaces it). See: $PROG apps
 
   --check                  show built vs available versions, don't build
   --refresh                rebuild the apt layer (pull distro security updates)
@@ -446,7 +837,8 @@ plus your own additions in $(tilde "$CONFIG_ROOT")/:
   --code-version=V         Claude Code: latest | stable | X.Y.Z
   --desktop-version=V      Claude Desktop: latest | X.Y.Z
   --rstudio-version=V      RStudio: latest | X.Y.Z-N
-  --apps="a b c"           third-party apps from apps/ (claude-* always installed)
+  --apps="a b c"           apps for this build only: a list, and/or changes to
+                           it (+a -b). To keep a change: $PROG apps add|rm APP
   --packages="p1 p2"       extra apt packages, added to EXTRA_PACKAGES
   --base-image=IMAGE       Debian/Ubuntu base image (e.g. debian:13)
   --image-name=NAME        resulting image name (default: ryad)
@@ -467,7 +859,7 @@ print_version() {
 }
 
 build_main() {
-  local ctx="" export="" config="" check=0 refresh="" a opt val f
+  local ctx="" export="" config="" check=0 refresh="" a opt val f n var
   local base="" name="" apps="" apps_set=0 pkgs="" ccv="" cdv="" rsv=""
   local -a flags=()
   while [ $# -gt 0 ]; do
@@ -508,14 +900,7 @@ build_main() {
   local tmp
   tmp=$(mktemp -d "${TMPDIR:-/tmp}/ryad-build.XXXXXX")
   trap "rm -rf $(printf %q "$tmp")" EXIT
-  if [ -n "$ctx" ]; then
-    [ -f "$ctx/Dockerfile" ] || die "no Dockerfile in $ctx"
-    for f in $BUILD_FILES; do [ ! -e "$ctx/$f" ] || cp -a "$ctx/$f" "$tmp/"; done
-  elif has_bundle; then
-    awk -v m="$MARKER" 'f { print } $0 == m { f = 1 }' "$SELF" | base64 -d | tar -xz -C "$tmp"
-  else
-    die "this ryad has no embedded build files (it's the unbundled source); use --context=DIR, or make a bundle with bundle.sh"
-  fi
+  unpack_build_files "$tmp" "$ctx"
 
   if [ -n "$export" ]; then
     [ ! -e "$export" ] || [ -z "$(ls -A "$export")" ] || die "$export exists and is not empty"
@@ -526,7 +911,8 @@ build_main() {
   fi
 
   # Your additions from the config folder, over the built-in files.
-  local extra_apps="" added=()
+  load_apps "$tmp"
+  local added=()
   for f in "$CONFIG_ROOT"/packages/*.list; do
     [ -f "$f" ] || continue
     cp "$f" "$tmp/packages/"; added+=("packages/${f##*/}")
@@ -534,35 +920,26 @@ build_main() {
   for f in "$CONFIG_ROOT"/apps/*.sh; do
     [ -f "$f" ] || continue
     cp "$f" "$tmp/apps/"; added+=("apps/${f##*/}")
-    case ${f##*/} in claude-code.sh|claude-desktop.sh|lib.sh) ;; *) extra_apps+=" $(basename "$f" .sh)" ;; esac
   done
 
   # Settings: built-in build.conf, then yours, then --config, then the options.
-  local confs=("$tmp/build.conf")
-  [ ! -f "$CONFIG_ROOT/build.conf" ] || confs+=("$CONFIG_ROOT/build.conf")
-  [ -z "$config" ] || confs+=("$config")
-  for f in "${confs[@]}"; do
-    # shellcheck disable=SC1090
-    . "$f"
-  done
-  : "${BASE_IMAGE:=ubuntu:26.04}" "${IMAGE_NAME:=ryad}" "${APPS:=}" "${EXTRA_PACKAGES:=}"
-  : "${CLAUDE_CODE_VERSION:=latest}" "${CLAUDE_DESKTOP_VERSION:=latest}" "${RSTUDIO_VERSION:=latest}"
-  : "${ANTIGRAVITY_VERSION:=latest}"
+  load_build_settings "$config" "$apps" "$apps_set"
+  : "${BASE_IMAGE:=ubuntu:26.04}" "${IMAGE_NAME:=ryad}" "${EXTRA_PACKAGES:=}"
+  : "${CLAUDE_CODE_VERSION:=latest}" "${CLAUDE_DESKTOP_VERSION:=latest}"
   [ -z "$base" ] || BASE_IMAGE=$base
   [ -z "$name" ] || IMAGE_NAME=$name
-  [ "$apps_set" = 0 ] || APPS=$apps
   EXTRA_PACKAGES="$EXTRA_PACKAGES$pkgs"
   [ -z "$ccv" ] || CLAUDE_CODE_VERSION=$ccv
   [ -z "$cdv" ] || CLAUDE_DESKTOP_VERSION=$cdv
   [ -z "$rsv" ] || RSTUDIO_VERSION=$rsv
-  for a in $extra_apps; do [[ " $APPS " == *" $a "* ]] || APPS="$APPS $a"; done
-  APPS=${APPS# }
   [ ${#added[@]} -eq 0 ] || echo "==> Your additions: ${added[*]}"
+  echo "==> Apps: $ALWAYS_APPS${APPS:+ $APPS}"
+  [ "$apps_set" = 0 ] || note "--apps only applies to this build: the next '$PROG build' goes back to your settings (to keep the change: $PROG apps add|rm APP)"
+  apps_check_needs
 
   local deb_arch
   case $(uname -m) in x86_64|amd64) deb_arch=amd64 ;; aarch64|arm64) deb_arch=arm64 ;;
     *) die "unsupported architecture $(uname -m)" ;; esac
-  has_app() { [[ " $APPS " == *" $1 "* ]]; }
 
   # --- check the base image
   echo "==> Base image: $BASE_IMAGE"
@@ -576,7 +953,7 @@ build_main() {
 
   # --- resolve versions ("latest" etc. to a concrete version, so that a rebuild
   # only rebuilds the layers whose version changed)
-  local cc_v cd_v var tag
+  local cc_v cd_v tag
   case $CLAUDE_CODE_VERSION in
     latest|stable) cc_v=$(curl -fsSL "https://downloads.claude.ai/claude-code-releases/$CLAUDE_CODE_VERSION") ;;
     *) cc_v=$CLAUDE_CODE_VERSION ;;
@@ -589,29 +966,30 @@ build_main() {
   fi
   [[ $cc_v =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]] || die "could not resolve Claude Code version ($CLAUDE_CODE_VERSION)"
   [ -n "$cd_v" ] || die "could not resolve Claude Desktop version ($CLAUDE_DESKTOP_VERSION)"
-  if has_app rstudio && [ "$RSTUDIO_VERSION" = latest ]; then
-    local key=$base_codename url
-    [ "$base_id" = debian ] && key="debian${base_version%%.*}"
-    url=$(curl -fsSL https://www.rstudio.com/wp-content/downloads.json \
-      | jq -r --arg k "$key" '.rstudio.open_source.stable.desktop.installer as $i | ($i[$k] // $i.jammy).url')
-    RSTUDIO_VERSION=$(sed -E 's|.*/rstudio-([0-9.]+-[0-9]+)-[a-z0-9_]+\.deb$|\1|' <<<"$url")
-  fi
-  if has_app antigravity && [ "$ANTIGRAVITY_VERSION" = latest ]; then
-    ANTIGRAVITY_VERSION=$(curl -fsSL https://antigravity-hub-auto-updater-974169037036.us-central1.run.app/releases \
-      | jq -r '.[0].version')
-  fi
+  local lookup_img=$IMAGE_NAME:latest
+  podman image exists "$lookup_img" || lookup_img=$DEFAULT_IMAGE
+  lookup_versions "$lookup_img" "$base_id" "$base_version" "$base_codename" "$deb_arch"
 
-  # Per-app versions: every *_VERSION set in the settings files (except Claude's).
-  local app_versions=()
-  for var in $(cat "${confs[@]}" | grep -oE '^[A-Z0-9_]+_VERSION=' | tr -d = | sort -u) RSTUDIO_VERSION ANTIGRAVITY_VERSION; do
+  # Per-app versions, passed to their scripts: one build arg per app, or, for a
+  # Dockerfile with all the apps in one layer, every *_VERSION set in the
+  # settings files (except Claude's) in APP_VERSIONS.
+  local app_args=() app_versions=()
+  for n in ${APP_LIST[@]+"${APP_LIST[@]}"}; do
+    var=$(app_var "$n")
+    app_args+=(--build-arg "$var=${!var:-latest}")
+    app_versions+=("$var=${!var:-latest}")
+  done
+  for var in $(cat "${CONFS[@]}" | grep -oE '^[A-Z0-9_]+_VERSION=' | tr -d = | sort -u); do
     case $var in CLAUDE_*) continue ;; esac
-    [[ " ${app_versions[*]} " == *" $var="* ]] && continue
+    [[ " ${app_versions[*]-} " == *" $var="* ]] && continue
     app_versions+=("$var=${!var}")
   done
 
-  printf '==> Versions\n    Claude Code     %s\n    Claude Desktop  %s\n' "$cc_v" "$cd_v"
-  has_app rstudio && printf '    RStudio         %s\n' "$RSTUDIO_VERSION"
-  has_app antigravity && printf '    Antigravity     %s\n' "$ANTIGRAVITY_VERSION"
+  printf '==> Versions\n    %-15s %s\n    %-15s %s\n' "Claude Code" "$cc_v" "Claude Desktop" "$cd_v"
+  for n in ${APP_LIST[@]+"${APP_LIST[@]}"}; do
+    var=$(app_var "$n")
+    printf '    %-15s %s\n' "$n" "${!var:-latest}"
+  done
 
   if [ "$check" = 1 ]; then
     if podman image exists "$IMAGE_NAME:latest"; then
@@ -627,13 +1005,20 @@ build_main() {
   fi
 
   # --- build
+  local -a layer_args=()
+  if per_app_layers "$tmp/Dockerfile"; then
+    layer_args=(${app_args[@]+"${app_args[@]}"})
+  else
+    note "this Dockerfile installs all the apps in one layer (no '# @apps-begin' block): changing one reinstalls them all"
+    layer_args=(--build-arg "APP_VERSIONS=${app_versions[*]-}")
+  fi
   tag="cc-${cc_v}_cd-${cd_v}"
   tag=${tag//[^A-Za-z0-9_.-]/_}
   echo "==> Building $IMAGE_NAME:latest ($tag)"
   podman build ${flags[@]+"${flags[@]}"} --format docker \
     --build-arg BASE_IMAGE="$BASE_IMAGE" \
     --build-arg APPS="$APPS" \
-    --build-arg APP_VERSIONS="${app_versions[*]}" \
+    ${layer_args[@]+"${layer_args[@]}"} \
     --build-arg EXTRA_PACKAGES="$EXTRA_PACKAGES" \
     --build-arg REFRESH="$refresh" \
     --build-arg CLAUDE_DESKTOP_VERSION="$cd_v" \
@@ -641,6 +1026,7 @@ build_main() {
     --build-arg RYAD_LAUNCHER="$([ -n "$RYAD_BUNDLE" ] && echo "${RYAD_BUNDLE% *}" || echo source)" \
     -t "$IMAGE_NAME:latest" -t "$IMAGE_NAME:$tag" \
     -f "$tmp/Dockerfile" "$tmp"
+  rm -rf "$tmp"; trap - EXIT
   echo "==> Done: $IMAGE_NAME:latest ($tag)"
   echo "    Environments on an older build: $PROG list (marked *), then: $PROG recreate --outdated"
 }
@@ -746,8 +1132,15 @@ _ryad_profiles() {
     [ -d "$d" ] && basename "$d"
   done
 }
+_ryad_apps() { # the app names, from the ryad being completed
+  "${words[0]/#\~/$HOME}" apps list -q 2>/dev/null
+}
 _ryad_values() { # OPTION VALUE: set reply to the completions of the option's value
+  local a
   case $1 in
+    --apps)
+      a=$(_ryad_apps)
+      mapfile -t reply < <(compgen -W "$a $(printf '+%s ' $a) $(printf -- '-%s ' $a)" -- "$2") ;;
     --profile|-p) mapfile -t reply < <(compgen -W "$(_ryad_profiles)" -- "$2") ;;
     --workspace|-w) compopt -o filenames; mapfile -t reply < <(compgen -d -- "$2") ;;
     --image) mapfile -t reply < <(compgen -W "$(podman images --format '{{.Repository}}:{{.Tag}}' 2>/dev/null | grep -v '<none>')" -- "$2") ;;
@@ -795,6 +1188,11 @@ _ryad() {
           0:*) mapfile -t reply < <(compgen -W "list create edit path rm" -- "$cur") ;;
           1:edit|1:path|*:rm) mapfile -t reply < <(compgen -W "$(_ryad_profiles)" -- "$cur") ;;
           2:edit) mapfile -t reply < <(compgen -W "conf env" -- "$cur") ;;
+        esac ;;
+      apps)
+        case $npos:$arg1 in
+          0:*) mapfile -t reply < <(compgen -W "list add rm new" -- "$cur") ;;
+          *:add|*:rm) mapfile -t reply < <(compgen -W "$(_ryad_apps)" -- "$cur") ;;
         esac ;;
       completion) [ $npos = 0 ] && mapfile -t reply < <(compgen -W "bash" -- "$cur") ;;
     esac
@@ -881,6 +1279,28 @@ COMPLETION
         done ;;
 
       *) die "unknown profiles command '$action' (list, create, edit, path, rm)" ;;
+    esac
+    exit 0 ;;
+
+  apps)
+    action=${POS[0]:-list}; POS=("${POS[@]:1}")
+    case $action in list|add|rm|new) ;; *) die "unknown apps command '$action' (list, add, rm, new)" ;; esac
+    [ "$QUIET" = 0 ] || [ "$action" = list ] || die "-q only applies to '$PROG apps list'"
+    # The built-in apps: from the build files embedded in this script, or next
+    # to it when it's the unbundled source.
+    APPS_CTX=""
+    has_bundle || APPS_CTX=$(dirname "$(readlink -f "$SELF")")
+    [ -z "$APPS_CTX" ] || [ -f "$APPS_CTX/Dockerfile" ] \
+      || die "this ryad has no embedded build files (it's the unbundled source); make a bundle with bundle.sh"
+    tmp=$(mktemp -d "${TMPDIR:-/tmp}/ryad-apps.XXXXXX")
+    trap "rm -rf $(printf %q "$tmp")" EXIT
+    unpack_build_files "$tmp" "$APPS_CTX"
+    load_apps "$tmp"
+    load_build_settings "" "" 0
+    case $action in
+      list) [ ${#POS[@]} -eq 0 ] || die "usage: $PROG apps [list] [-q]"; apps_list ;;
+      add|rm) apps_edit "$action" ${POS[@]+"${POS[@]}"} ;;
+      new) apps_new ${POS[@]+"${POS[@]}"} ;;
     esac
     exit 0 ;;
 
@@ -974,25 +1394,7 @@ built by: ryad {{ or (index .Labels \"$LBL.launcher\") \"(before bundles)\" }}" 
     if [ "$OUTDATED" = 1 ] || [ "$ALL" = 1 ]; then
       [ ${#POS[@]} -eq 0 ] || die "give either a NAME or --outdated/--all"
       [ -z "$PROFILE$WORKSPACE" ] || die "--profile and --workspace change one environment at a time: $PROG recreate NAME --profile=..."
-      targets=() lines=()
-      while IFS=$'\t' read -r n s p w i o; do
-        [ "$ALL" = 1 ] || [ "$o" = 1 ] || continue
-        targets+=("$n")
-        lines+=("$(printf '  %-16s %-8s %s' "$n" "$s" "$([ "$s" != running ] || echo '(its shells and apps will be closed)')")")
-      done < <(env_rows)
-      if [ ${#targets[@]} -eq 0 ]; then
-        if [ "$ALL" = 1 ]; then note "no environments"; else note "nothing to recreate: all environments are on their current image"; fi
-        exit 0
-      fi
-      if [ "$YES" = 0 ]; then
-        echo "Recreate these environments:"
-        printf '%s\n' "${lines[@]}"
-        echo "Changes made inside the containers (e.g. packages installed with sudo) are lost;"
-        echo "profiles and workspaces are kept."
-      fi
-      confirm "Continue?"
-      for n in "${targets[@]}"; do recreate_settings "$n"; recreate_env "$n"; done
-      note "enter them with: $PROG NAME"
+      recreate_many "$ALL"
     else
       [ ${#POS[@]} -eq 1 ] || die "usage: $PROG recreate NAME [options] | --outdated | --all"
       n=${POS[0]}

@@ -58,11 +58,13 @@ The [Dockerfile](../Dockerfile) builds the image in layers ordered from least to
 |---|---|---|---|
 | 1 | apt packages | `packages/*.list`, `EXTRA_PACKAGES` | a list changes, or `--refresh` |
 | 2 | user account | UID 1000, passwordless sudo | rarely |
-| 3 | third-party apps | `apps/<name>.sh`, for each app in `APPS` | an app or its version changes |
+| 3 | third-party apps, one layer each | `apps/<name>.sh`, for each app in `APPS` | that app, its version, or an app before it changes |
 | 4 | Claude Desktop | `apps/claude-desktop.sh` | a new Desktop version |
 | 5 | Claude Code | `apps/claude-code.sh` | a new Code version |
 
-Before building, `ryad build` resolves `latest` and `stable` into concrete version numbers and passes them as build arguments. A rebuild therefore invalidates exactly the layers whose version changed. The resolved versions of Claude Code and Claude Desktop also give the image its tag, `cc-<code>_cd-<desktop>`; all resolved versions are recorded as image labels and in `/etc/ryad-release`, which `ryad versions` reads.
+`ryad build` writes one layer per app into the Dockerfile it builds from, in place of the block between `# @apps-begin` and `# @apps-end` (which, for a plain `podman build`, installs them all in one layer). The built-in apps come first, in the built-in order, then yours: adding or removing an app only rebuilds the layers after it. `/etc/ryad/apps.list` records the apps with the commands they add, for the shell banner.
+
+Before building, `ryad build` resolves `latest` and `stable` into concrete version numbers and passes them as build arguments. For the other apps, it runs the `# @latest` line of their script, if they have one, in a throwaway container of the previous image. A rebuild therefore invalidates exactly the layers whose version changed. The resolved versions of Claude Code and Claude Desktop also give the image its tag, `cc-<code>_cd-<desktop>`; all resolved versions are recorded as image labels and in `/etc/ryad-release`, which `ryad versions` reads.
 
 Claude Code is installed as the native binary in `/opt/claude-code`, with the same checksum verification as the official installer, but system-wide rather than per user, since the home directory is the profile. Its auto-updater is disabled (`DISABLE_AUTOUPDATER=1`).
 

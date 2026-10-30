@@ -1,5 +1,9 @@
 # Claude Desktop (official Linux beta) from Anthropic's apt repository.
 # https://code.claude.com/docs/en/desktop-linux
+#
+# @description Claude Desktop, Anthropic's desktop app
+# @commands claude-desktop
+# @needs firefox
 . "$(dirname "$0")/lib.sh"
 
 KEY=/usr/share/keyrings/claude-desktop-archive-keyring.asc

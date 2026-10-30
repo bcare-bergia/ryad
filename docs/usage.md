@@ -45,7 +45,7 @@ ryad acme -- git status
 
 ## Starting apps
 
-From any shell in the environment, run the apps like normal programs: `pi`, `antigravity`, `claude`, `claude-desktop`, `codium`, `rstudio`, `emacs`, `firefox`, or anything else installed in the image.
+From any shell in the environment, run the apps like normal programs: `pi`, `antigravity`, `claude`, `claude-desktop`, `codium`, `rstudio`, `emacs`, `firefox`, or anything else installed in the image. The banner of each new shell lists the ones its image has, and `ryad apps` lists them all, with the commands they add. To add or remove apps, see [Choose the apps](customization.md#choose-the-apps).
 
 **GUI apps stay in the foreground** of the terminal you start them from, until their window is closed. This includes `codium`, which normally returns straight away: here it stays in the foreground so that the [one-instance-per-profile lock](profiles.md#sharing-a-profile-between-environments) is held while it runs. To get the terminal back, use `antigravity &`.
 
@@ -128,4 +128,4 @@ Commands that delete something ask first; `--yes` (`-y`) skips the question. Opt
 | Profile (logins, settings, history) | ✅ | ✅ | ✅ | ✅ |
 | Workspace | ✅ | ✅ | ✅ | ✅ |
 
-A stopped environment keeps its container filesystem. `recreate` and `rm` discard it. To keep a tool across recreates, [add it to the image](customization.md).
+A stopped environment keeps its container filesystem. `recreate` and `rm` discard it. To keep a tool across recreates, [add it to the image](customization.md): `ryad apps add` for an app, a package list for a distro package.

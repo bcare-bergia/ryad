@@ -1,4 +1,8 @@
 # RStudio Desktop from Posit's .deb. R itself comes from packages/20-dev.list.
+#
+# @description RStudio Desktop, IDE for R
+# @commands rstudio
+# @latest k=$BASE_CODENAME; [ "$BASE_ID" != debian ] || k=debian${BASE_VERSION%%.*}; curl -fsSL https://www.rstudio.com/wp-content/downloads.json | jq -r --arg k "$k" '.rstudio.open_source.stable.desktop.installer as $i | ($i[$k] // $i.jammy).url' | sed -E 's|.*/rstudio-([0-9.]+-[0-9]+)-[a-z0-9_]+\.deb$|\1|'
 . "$(dirname "$0")/lib.sh"
 
 v=${RSTUDIO_VERSION:-latest}

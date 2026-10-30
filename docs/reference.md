@@ -26,6 +26,15 @@ Every command, option, setting and file, in one place. For explanations, follow 
 | `ryad recreate --outdated \| --all` | recreate several environments at once |
 | `ryad versions [NAME \| --image=IMAGE]` | app versions in an image (default `ryad:latest`) |
 
+### Apps
+
+| Command | |
+|---|---|
+| `ryad apps [list] [-q]` | the apps: installed, available, or changing at the next build. `-q`: names only ([Customization](customization.md#choose-the-apps)) |
+| `ryad apps add APP… [--yes]` | add apps (saved in `build.conf`), then offer to rebuild and recreate. `--yes`: do it without asking |
+| `ryad apps rm APP… [--yes]` | remove apps, the same way |
+| `ryad apps new APP` | write `~/.config/ryad/apps/APP.sh` from a template (or from the built-in one of that name) in `$EDITOR` |
+
 ### Profiles
 
 | Command | |
@@ -93,7 +102,7 @@ These are fixed afterwards; use `recreate` to change them.
 | `--code-version=V` | Claude Code: `latest`, `stable` or `X.Y.Z` |
 | `--desktop-version=V` | Claude Desktop: `latest` or `X.Y.Z` |
 | `--rstudio-version=V` | RStudio: `latest` or `X.Y.Z-N` |
-| `--apps="a b c"` | apps from `apps/` (Claude Code and Claude Desktop are built in) |
+| `--apps="a b c"` | apps for this build only, as in `APPS` (`a b`, `+a -b`). To keep a change, use `ryad apps add/rm` |
 | `--packages="p1 p2"` | extra apt packages, added to `EXTRA_PACKAGES` |
 | `--base-image=IMAGE` | Debian/Ubuntu base image, e.g. `debian:13` |
 | `--image-name=NAME` | resulting image name (default `ryad`) |
@@ -113,14 +122,14 @@ Overrides the built-in [build.conf](../build.conf). See [Customization](customiz
 |---|---|---|
 | `BASE_IMAGE` | `ubuntu:26.04` | Ubuntu ≥ 22.04 or Debian ≥ 12 |
 | `IMAGE_NAME` | `ryad` | tagged `:latest` and `:cc-<code>_cd-<desktop>` |
-| `APPS` | `firefox vscodium rstudio antigravity pi` | apps from `apps/<name>.sh` |
+| `APPS` | `firefox vscodium rstudio antigravity pi` | apps from `apps/<name>.sh`: a list, and/or changes to it (`+name`, `-name`). See [Choose the apps](customization.md#choose-the-apps) |
 | `EXTRA_PACKAGES` | | apt packages, on top of `packages/*.list` |
 | `CLAUDE_CODE_VERSION` | `latest` | `latest`, `stable` or `X.Y.Z` |
 | `CLAUDE_DESKTOP_VERSION` | `latest` | `latest` or `X.Y.Z` |
 | `RSTUDIO_VERSION` | `latest` | `latest` or e.g. `2026.10.0-233` |
 | `ANTIGRAVITY_VERSION` | `latest` | `latest` or `X.Y.Z` |
-| `PI_VERSION` | `latest` | `latest` or `X.Y.Z`; `latest` is only re-resolved with `--refresh` |
-| `<APP>_VERSION` | | passed to `apps/<app>.sh`, e.g. `VSCODIUM_VERSION` |
+| `PI_VERSION` | `latest` | `latest` or `X.Y.Z` |
+| `<APP>_VERSION` | | passed to `apps/<app>.sh`, e.g. `VSCODIUM_VERSION`. `latest` is looked up at each build for apps with an `@latest` line, otherwise only with `--refresh` |
 
 ### `profiles/<name>/profile.conf`
 
@@ -148,7 +157,7 @@ Read by the launcher on the host:
 | `RYAD_HOME` | ryad's config folder (default `${XDG_CONFIG_HOME:-~/.config}/ryad`) |
 | `RYAD_PROMPT_COLORS` | overrides the profile's `PROMPT_COLORS` for this shell |
 | `RYAD_ELECTRON_NO_SANDBOX=1` | start Electron apps with `--no-sandbox` |
-| `VISUAL`, `EDITOR` | editor for `ryad profiles edit` |
+| `VISUAL`, `EDITOR` | editor for `ryad profiles edit` and `ryad apps new` |
 
 Set by the launcher inside an environment: `RYAD_NAME`, `RYAD_PROFILE`, `RYAD_WORKSPACE`, `RYAD_USER`.
 
@@ -158,10 +167,11 @@ Set by the launcher inside an environment: `RYAD_NAME`, `RYAD_PROFILE`, `RYAD_WO
 |---|---|
 | `~/.config/ryad/build.conf` | your build settings |
 | `~/.config/ryad/packages/*.list` | your apt package lists |
-| `~/.config/ryad/apps/*.sh` | your app installers |
+| `~/.config/ryad/apps/*.sh` | your app installers (`ryad apps new`) |
 | `~/.config/ryad/profiles/<name>/` | a profile (mode 0700) |
 | `…/profiles/<name>/home/` | the home directory inside its environments |
 | `…/home/.cache/ryad/logs/<cmd>.log` | output of commands started with `--detach` |
 | `$XDG_RUNTIME_DIR/ryad/` | stable display links, refreshed at each start |
 | container `ryad-<name>` | an environment (`podman logs ryad-<name>`) |
 | image `ryad:latest` | the default image |
+| `/etc/ryad/apps.list` (in the image) | its apps: name, commands, description |

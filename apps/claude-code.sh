@@ -1,6 +1,10 @@
 # Claude Code CLI, native binary, installed system-wide in /opt/claude-code.
 # Same source and checksum verification as https://claude.ai/install.sh, but
 # without the per-user shell integration (the home directory is the profile).
+#
+# @description Claude Code, Anthropic's coding agent (terminal)
+# @commands claude
+# @needs firefox
 . "$(dirname "$0")/lib.sh"
 
 BASE=https://downloads.claude.ai/claude-code-releases
