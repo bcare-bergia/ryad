@@ -34,6 +34,12 @@ So ryad gives each project its own **environment**, a small Podman container you
 - its **project folder**, where the work happens;
 - a **profile**: a home directory holding the logins, API keys and history for one context. One for your personal projects, one per client, or whatever split suits you.
 
+Two projects, two profiles, each with its own prompt colors. Neither environment sees `~/.ssh` or the other project, and VSCodium starts in the background from the first one:
+
+<p align="center">
+  <img src="art/demo.svg" alt="A terminal session: in ~/projects/acme, 'ryad --profile=personal' creates the environment acme and opens a shell with a teal prompt, where 'ls ~/.ssh' finds nothing. Back on the host, 'ryad -d -- codium .' starts VSCodium in it. In ~/clients/x/api, 'ryad --profile=client-x' opens a shell with an orange prompt, where 'ls ~/projects' finds nothing.">
+</p>
+
 Your SSH keys, your documents and your other projects stay outside.
 
 And you can run apps with graphical interfaces like Claude Desktop, VS Codium, Firefox or whatever from each sandboxed environment.
@@ -120,12 +126,6 @@ you@acme:~/projects/acme$ pi            # or claude, antigravity, codium …
 See [Getting started](docs/getting-started.md) for the details, including how to install from this repository instead.
 
 ## Examples
-
-Two projects, two profiles, each with its own prompt colors. Neither environment sees `~/.ssh` or the other project, and VSCodium starts in the background from the first one:
-
-<p align="center">
-  <img src="art/demo.svg" alt="A terminal session: in ~/projects/acme, 'ryad --profile=personal' creates the environment acme and opens a shell with a teal prompt, where 'ls ~/.ssh' finds nothing. Back on the host, 'ryad -d -- codium .' starts VSCodium in it. In ~/clients/x/api, 'ryad --profile=client-x' opens a shell with an orange prompt, where 'ls ~/projects' finds nothing.">
-</p>
 
 **Keep clients apart.** Each profile has its own logins, keys and history.
 
