@@ -1,0 +1,235 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1264" height="624" viewBox="0 0 1264 624" role="img" aria-label="ryad environments: one image shared by four containers; each container mounts only its project folder and one profile home through the riad wall, and the rest of your home stays outside">
+<clipPath id="c"><rect width="1264" height="624" rx="16"/></clipPath><g clip-path="url(#c)">
+<g shape-rendering="crispEdges">
+<rect x="0" y="0" width="1264" height="16" fill="#140c33"/>
+<rect x="0" y="16" width="1264" height="16" fill="#150c34"/>
+<rect x="0" y="32" width="1264" height="16" fill="#150d35"/>
+<rect x="0" y="48" width="1264" height="16" fill="#160d36"/>
+<rect x="0" y="64" width="1264" height="16" fill="#170d37"/>
+<rect x="0" y="80" width="24" height="16" fill="#170d38"/>
+<rect x="24" y="80" width="1216" height="16" fill="#2b1650"/>
+<rect x="1240" y="80" width="24" height="16" fill="#170d38"/>
+<rect x="0" y="96" width="24" height="16" fill="#180e39"/>
+<rect x="24" y="96" width="1216" height="16" fill="#2b1650"/>
+<rect x="1240" y="96" width="24" height="16" fill="#180e39"/>
+<rect x="0" y="112" width="24" height="16" fill="#190e3a"/>
+<rect x="24" y="112" width="1216" height="16" fill="#2b1650"/>
+<rect x="1240" y="112" width="24" height="16" fill="#190e3a"/>
+<rect x="0" y="128" width="1264" height="16" fill="#190e3b"/>
+<rect x="0" y="144" width="1264" height="16" fill="#1a0f3c"/>
+<rect x="0" y="160" width="1264" height="16" fill="#1b0f3d"/>
+<rect x="0" y="176" width="1264" height="16" fill="#1b0f3e"/>
+<rect x="0" y="192" width="24" height="16" fill="#1c103e"/>
+<rect x="24" y="192" width="280" height="16" fill="#1f1147"/>
+<rect x="304" y="192" width="32" height="16" fill="#1c103e"/>
+<rect x="336" y="192" width="280" height="16" fill="#1f1147"/>
+<rect x="616" y="192" width="32" height="16" fill="#1c103e"/>
+<rect x="648" y="192" width="280" height="16" fill="#1f1147"/>
+<rect x="928" y="192" width="32" height="16" fill="#1c103e"/>
+<rect x="960" y="192" width="280" height="16" fill="#1f1147"/>
+<rect x="1240" y="192" width="24" height="16" fill="#1c103e"/>
+<rect x="0" y="208" width="24" height="16" fill="#1d103f"/>
+<rect x="24" y="208" width="280" height="16" fill="#1f1147"/>
+<rect x="304" y="208" width="32" height="16" fill="#1d103f"/>
+<rect x="336" y="208" width="280" height="16" fill="#1f1147"/>
+<rect x="616" y="208" width="32" height="16" fill="#1d103f"/>
+<rect x="648" y="208" width="280" height="16" fill="#1f1147"/>
+<rect x="928" y="208" width="32" height="16" fill="#1d103f"/>
+<rect x="960" y="208" width="280" height="16" fill="#1f1147"/>
+<rect x="1240" y="208" width="24" height="16" fill="#1d103f"/>
+<rect x="0" y="224" width="24" height="16" fill="#1d1040"/>
+<rect x="24" y="224" width="16" height="16" fill="#1f1147"/>
+<rect x="40" y="224" width="112" height="16" fill="#331d5c"/>
+<rect x="152" y="224" width="24" height="16" fill="#1f1147"/>
+<rect x="176" y="224" width="112" height="16" fill="#331d5c"/>
+<rect x="288" y="224" width="16" height="16" fill="#1f1147"/>
+<rect x="304" y="224" width="32" height="16" fill="#1d1040"/>
+<rect x="336" y="224" width="16" height="16" fill="#1f1147"/>
+<rect x="352" y="224" width="112" height="16" fill="#331d5c"/>
+<rect x="464" y="224" width="24" height="16" fill="#1f1147"/>
+<rect x="488" y="224" width="112" height="16" fill="#331d5c"/>
+<rect x="600" y="224" width="16" height="16" fill="#1f1147"/>
+<rect x="616" y="224" width="32" height="16" fill="#1d1040"/>
+<rect x="648" y="224" width="16" height="16" fill="#1f1147"/>
+<rect x="664" y="224" width="112" height="16" fill="#331d5c"/>
+<rect x="776" y="224" width="24" height="16" fill="#1f1147"/>
+<rect x="800" y="224" width="112" height="16" fill="#331d5c"/>
+<rect x="912" y="224" width="16" height="16" fill="#1f1147"/>
+<rect x="928" y="224" width="32" height="16" fill="#1d1040"/>
+<rect x="960" y="224" width="16" height="16" fill="#1f1147"/>
+<rect x="976" y="224" width="112" height="16" fill="#331d5c"/>
+<rect x="1088" y="224" width="24" height="16" fill="#1f1147"/>
+<rect x="1112" y="224" width="112" height="16" fill="#331d5c"/>
+<rect x="1224" y="224" width="16" height="16" fill="#1f1147"/>
+<rect x="1240" y="224" width="24" height="16" fill="#1d1040"/>
+<rect x="0" y="240" width="24" height="16" fill="#1e1041"/>
+<rect x="24" y="240" width="16" height="16" fill="#1f1147"/>
+<rect x="40" y="240" width="112" height="16" fill="#331d5c"/>
+<rect x="152" y="240" width="24" height="16" fill="#1f1147"/>
+<rect x="176" y="240" width="112" height="16" fill="#331d5c"/>
+<rect x="288" y="240" width="16" height="16" fill="#1f1147"/>
+<rect x="304" y="240" width="32" height="16" fill="#1e1041"/>
+<rect x="336" y="240" width="16" height="16" fill="#1f1147"/>
+<rect x="352" y="240" width="112" height="16" fill="#331d5c"/>
+<rect x="464" y="240" width="24" height="16" fill="#1f1147"/>
+<rect x="488" y="240" width="112" height="16" fill="#331d5c"/>
+<rect x="600" y="240" width="16" height="16" fill="#1f1147"/>
+<rect x="616" y="240" width="32" height="16" fill="#1e1041"/>
+<rect x="648" y="240" width="16" height="16" fill="#1f1147"/>
+<rect x="664" y="240" width="112" height="16" fill="#331d5c"/>
+<rect x="776" y="240" width="24" height="16" fill="#1f1147"/>
+<rect x="800" y="240" width="112" height="16" fill="#331d5c"/>
+<rect x="912" y="240" width="16" height="16" fill="#1f1147"/>
+<rect x="928" y="240" width="32" height="16" fill="#1e1041"/>
+<rect x="960" y="240" width="16" height="16" fill="#1f1147"/>
+<rect x="976" y="240" width="112" height="16" fill="#331d5c"/>
+<rect x="1088" y="240" width="24" height="16" fill="#1f1147"/>
+<rect x="1112" y="240" width="112" height="16" fill="#331d5c"/>
+<rect x="1224" y="240" width="16" height="16" fill="#1f1147"/>
+<rect x="1240" y="240" width="24" height="16" fill="#1e1041"/>
+<rect x="0" y="256" width="24" height="16" fill="#1f1142"/>
+<rect x="24" y="256" width="16" height="16" fill="#1f1147"/>
+<rect x="40" y="256" width="112" height="16" fill="#331d5c"/>
+<rect x="152" y="256" width="24" height="16" fill="#1f1147"/>
+<rect x="176" y="256" width="112" height="16" fill="#314c75"/>
+<rect x="288" y="256" width="16" height="16" fill="#1f1147"/>
+<rect x="304" y="256" width="32" height="16" fill="#1f1142"/>
+<rect x="336" y="256" width="16" height="16" fill="#1f1147"/>
+<rect x="352" y="256" width="112" height="16" fill="#331d5c"/>
+<rect x="464" y="256" width="24" height="16" fill="#1f1147"/>
+<rect x="488" y="256" width="112" height="16" fill="#703e48"/>
+<rect x="600" y="256" width="16" height="16" fill="#1f1147"/>
+<rect x="616" y="256" width="32" height="16" fill="#1f1142"/>
+<rect x="648" y="256" width="16" height="16" fill="#1f1147"/>
+<rect x="664" y="256" width="112" height="16" fill="#331d5c"/>
+<rect x="776" y="256" width="24" height="16" fill="#1f1147"/>
+<rect x="800" y="256" width="112" height="16" fill="#703e48"/>
+<rect x="912" y="256" width="16" height="16" fill="#1f1147"/>
+<rect x="928" y="256" width="32" height="16" fill="#1f1142"/>
+<rect x="960" y="256" width="16" height="16" fill="#1f1147"/>
+<rect x="976" y="256" width="112" height="16" fill="#331d5c"/>
+<rect x="1088" y="256" width="24" height="16" fill="#1f1147"/>
+<rect x="1112" y="256" width="112" height="16" fill="#692f6a"/>
+<rect x="1224" y="256" width="16" height="16" fill="#1f1147"/>
+<rect x="1240" y="256" width="24" height="16" fill="#1f1142"/>
+<rect x="0" y="272" width="24" height="16" fill="#1f1143"/>
+<rect x="24" y="272" width="280" height="16" fill="#1f1147"/>
+<rect x="304" y="272" width="32" height="16" fill="#1f1143"/>
+<rect x="336" y="272" width="280" height="16" fill="#1f1147"/>
+<rect x="616" y="272" width="32" height="16" fill="#1f1143"/>
+<rect x="648" y="272" width="280" height="16" fill="#1f1147"/>
+<rect x="928" y="272" width="32" height="16" fill="#1f1143"/>
+<rect x="960" y="272" width="280" height="16" fill="#1f1147"/>
+<rect x="1240" y="272" width="24" height="16" fill="#1f1143"/>
+<rect x="0" y="288" width="24" height="16" fill="#201144"/>
+<rect x="24" y="288" width="280" height="16" fill="#1f1147"/>
+<rect x="304" y="288" width="32" height="16" fill="#201144"/>
+<rect x="336" y="288" width="280" height="16" fill="#1f1147"/>
+<rect x="616" y="288" width="32" height="16" fill="#201144"/>
+<rect x="648" y="288" width="280" height="16" fill="#1f1147"/>
+<rect x="928" y="288" width="32" height="16" fill="#201144"/>
+<rect x="960" y="288" width="280" height="16" fill="#1f1147"/>
+<rect x="1240" y="288" width="24" height="16" fill="#201144"/>
+<rect x="0" y="304" width="1264" height="16" fill="#211245"/>
+<rect x="0" y="320" width="1264" height="16" fill="#211246"/>
+<rect x="0" y="336" width="1264" height="16" fill="#221247"/>
+<rect x="0" y="352" width="8" height="16" fill="#231248"/>
+<rect x="8" y="352" width="88" height="16" fill="#d27a52"/>
+<rect x="96" y="352" width="8" height="16" fill="#140c33"/>
+<rect x="104" y="352" width="128" height="16" fill="#d27a52"/>
+<rect x="232" y="352" width="8" height="16" fill="#140c33"/>
+<rect x="240" y="352" width="168" height="16" fill="#d27a52"/>
+<rect x="408" y="352" width="8" height="16" fill="#140c33"/>
+<rect x="416" y="352" width="128" height="16" fill="#d27a52"/>
+<rect x="544" y="352" width="8" height="16" fill="#140c33"/>
+<rect x="552" y="352" width="168" height="16" fill="#d27a52"/>
+<rect x="720" y="352" width="8" height="16" fill="#140c33"/>
+<rect x="728" y="352" width="128" height="16" fill="#d27a52"/>
+<rect x="856" y="352" width="8" height="16" fill="#140c33"/>
+<rect x="864" y="352" width="168" height="16" fill="#d27a52"/>
+<rect x="1032" y="352" width="8" height="16" fill="#140c33"/>
+<rect x="1040" y="352" width="128" height="16" fill="#d27a52"/>
+<rect x="1168" y="352" width="8" height="16" fill="#140c33"/>
+<rect x="1176" y="352" width="80" height="16" fill="#d27a52"/>
+<rect x="1256" y="352" width="8" height="16" fill="#231248"/>
+<rect x="0" y="368" width="1264" height="16" fill="#231349"/>
+<rect x="0" y="384" width="1264" height="16" fill="#24134a"/>
+<rect x="0" y="400" width="24" height="16" fill="#27144c"/>
+<rect x="24" y="400" width="144" height="16" fill="#331d5c"/>
+<rect x="168" y="400" width="168" height="16" fill="#27144c"/>
+<rect x="336" y="400" width="144" height="16" fill="#331d5c"/>
+<rect x="480" y="400" width="168" height="16" fill="#27144c"/>
+<rect x="648" y="400" width="144" height="16" fill="#331d5c"/>
+<rect x="792" y="400" width="168" height="16" fill="#27144c"/>
+<rect x="960" y="400" width="144" height="16" fill="#331d5c"/>
+<rect x="1104" y="400" width="160" height="16" fill="#27144c"/>
+<rect x="0" y="416" width="1264" height="16" fill="#2b154e"/>
+<rect x="0" y="432" width="1264" height="16" fill="#2e1750"/>
+<rect x="0" y="448" width="1264" height="16" fill="#321852"/>
+<rect x="0" y="464" width="24" height="16" fill="#351954"/>
+<rect x="24" y="464" width="280" height="16" fill="#1d284e"/>
+<rect x="304" y="464" width="32" height="16" fill="#351954"/>
+<rect x="336" y="464" width="592" height="16" fill="#3c2238"/>
+<rect x="928" y="464" width="32" height="16" fill="#351954"/>
+<rect x="960" y="464" width="280" height="16" fill="#391a49"/>
+<rect x="1240" y="464" width="24" height="16" fill="#351954"/>
+<rect x="0" y="480" width="24" height="16" fill="#391a56"/>
+<rect x="24" y="480" width="280" height="16" fill="#1d284e"/>
+<rect x="304" y="480" width="32" height="16" fill="#391a56"/>
+<rect x="336" y="480" width="592" height="16" fill="#3c2238"/>
+<rect x="928" y="480" width="32" height="16" fill="#391a56"/>
+<rect x="960" y="480" width="280" height="16" fill="#391a49"/>
+<rect x="1240" y="480" width="24" height="16" fill="#391a56"/>
+<rect x="0" y="496" width="24" height="16" fill="#3c1b58"/>
+<rect x="24" y="496" width="280" height="16" fill="#1d284e"/>
+<rect x="304" y="496" width="32" height="16" fill="#3c1b58"/>
+<rect x="336" y="496" width="592" height="16" fill="#3c2238"/>
+<rect x="928" y="496" width="32" height="16" fill="#3c1b58"/>
+<rect x="960" y="496" width="280" height="16" fill="#391a49"/>
+<rect x="1240" y="496" width="24" height="16" fill="#3c1b58"/>
+<rect x="0" y="512" width="1264" height="16" fill="#401c5a"/>
+<rect x="0" y="528" width="1264" height="16" fill="#431e5c"/>
+<rect x="0" y="544" width="1264" height="16" fill="#471f5e"/>
+<rect x="0" y="560" width="1264" height="16" fill="#4a2060"/>
+<rect x="0" y="576" width="1264" height="16" fill="#7a3366"/>
+<rect x="0" y="592" width="1264" height="16" fill="#3a2f66"/>
+<rect x="0" y="608" width="1264" height="16" fill="#1b3a6a"/>
+</g><g font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,'DejaVu Sans Mono',monospace" font-size="13.3" xml:space="preserve">
+<text y="12"><tspan x="168" fill="#fff1c8">.</tspan><tspan x="384" fill="#ffffff">.         *</tspan><tspan x="1064" fill="#fff1c8">+</tspan></text>
+<text y="28"><tspan x="16" fill="#f2c14e" font-weight="bold">ryad environments</tspan><tspan x="1112" fill="#fff1c8">+</tspan><tspan x="1216" fill="#fff1c8" font-weight="bold">)</tspan></text>
+<text y="44"><tspan x="16" fill="#a79fb8">One image, one Podman container per project. Each container sees only two folders from your home: its project and one profile.</tspan><tspan x="1184" fill="#fff1c8">.</tspan></text>
+<text y="60"><tspan x="112" fill="#fff1c8">.+                                          .          *</tspan><tspan x="680" fill="#ffffff">.       .                        +</tspan><tspan x="1128" fill="#fff1c8">+</tspan></text>
+<text y="76"><tspan x="16" fill="#f2c14e" textLength="16" lengthAdjust="spacingAndGlyphs">╔═</tspan><tspan x="40" fill="#f2c14e" font-weight="bold">ryad image</tspan><tspan x="128" fill="#f2c14e" textLength="1120" lengthAdjust="spacingAndGlyphs">══════════════╤════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗</tspan></text>
+<text y="92"><tspan x="16" fill="#f2c14e" textLength="8" lengthAdjust="spacingAndGlyphs">║</tspan><tspan x="40" fill="#a79fb8">one image, built once</tspan><tspan x="240" fill="#f2c14e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="264" fill="#a79fb8" font-weight="bold">AGENTS</tspan><tspan x="328" fill="#efcf9c">pi</tspan><tspan x="352" fill="#efcf9c" textLength="8" lengthAdjust="spacingAndGlyphs">·</tspan><tspan x="368" fill="#efcf9c">claude</tspan><tspan x="424" fill="#efcf9c" textLength="8" lengthAdjust="spacingAndGlyphs">·</tspan><tspan x="440" fill="#efcf9c">claude-desktop</tspan><tspan x="560" fill="#efcf9c" textLength="8" lengthAdjust="spacingAndGlyphs">·</tspan><tspan x="576" fill="#efcf9c">antigravity</tspan><tspan x="1240" fill="#f2c14e" textLength="8" lengthAdjust="spacingAndGlyphs">║</tspan></text>
+<text y="108"><tspan x="16" fill="#f2c14e" textLength="8" lengthAdjust="spacingAndGlyphs">║</tspan><tspan x="40" fill="#efcf9c" font-weight="bold">$ ryad build</tspan><tspan x="240" fill="#f2c14e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="264" fill="#a79fb8" font-weight="bold">TOOLS</tspan><tspan x="328" fill="#efcf9c">codium</tspan><tspan x="384" fill="#efcf9c" textLength="8" lengthAdjust="spacingAndGlyphs">·</tspan><tspan x="400" fill="#efcf9c">emacs</tspan><tspan x="448" fill="#efcf9c" textLength="8" lengthAdjust="spacingAndGlyphs">·</tspan><tspan x="464" fill="#efcf9c">rstudio</tspan><tspan x="528" fill="#efcf9c" textLength="8" lengthAdjust="spacingAndGlyphs">·</tspan><tspan x="544" fill="#efcf9c">firefox</tspan><tspan x="608" fill="#efcf9c" textLength="8" lengthAdjust="spacingAndGlyphs">·</tspan><tspan x="624" fill="#efcf9c">git</tspan><tspan x="656" fill="#efcf9c" textLength="8" lengthAdjust="spacingAndGlyphs">·</tspan><tspan x="672" fill="#efcf9c">python</tspan><tspan x="728" fill="#efcf9c" textLength="8" lengthAdjust="spacingAndGlyphs">·</tspan><tspan x="744" fill="#efcf9c">node</tspan><tspan x="784" fill="#efcf9c" textLength="8" lengthAdjust="spacingAndGlyphs">·</tspan><tspan x="800" fill="#efcf9c">R</tspan><tspan x="1240" fill="#f2c14e" textLength="8" lengthAdjust="spacingAndGlyphs">║</tspan></text>
+<text y="124"><tspan x="16" fill="#f2c14e" textLength="232" lengthAdjust="spacingAndGlyphs">║                           │</tspan><tspan x="328" fill="#a79fb8">+ anything else that runs on Debian or Ubuntu</tspan><tspan x="1240" fill="#f2c14e" textLength="8" lengthAdjust="spacingAndGlyphs">║</tspan></text>
+<text y="140"><tspan x="16" fill="#f2c14e" textLength="1232" lengthAdjust="spacingAndGlyphs">╚═════════════════╤═════════╧════════════════════════════╤══════════════════════════════════════╤══════════════════════════════════════╤═════════════════╝</tspan></text>
+<text y="156"><tspan x="160" fill="#ffb347" textLength="944" lengthAdjust="spacingAndGlyphs">│                                      │                                      │                                      │</tspan></text>
+<text y="172"><tspan x="160" fill="#ffb347" font-weight="bold">v                                      v                                      v                                      v</tspan></text>
+<text y="188"><tspan x="16" fill="#efcf9c" textLength="16" lengthAdjust="spacingAndGlyphs">╭─</tspan><tspan x="40" fill="#efcf9c" font-weight="bold">blog</tspan><tspan x="80" fill="#efcf9c" textLength="80" lengthAdjust="spacingAndGlyphs">──────────</tspan><tspan x="160" fill="#ffb347" textLength="8" lengthAdjust="spacingAndGlyphs">┴</tspan><tspan x="168" fill="#efcf9c" textLength="40" lengthAdjust="spacingAndGlyphs">─────</tspan><tspan x="216" fill="#a79fb8">container</tspan><tspan x="296" fill="#efcf9c" textLength="48" lengthAdjust="spacingAndGlyphs">─╮  ╭─</tspan><tspan x="352" fill="#efcf9c" font-weight="bold">x-api</tspan><tspan x="400" fill="#efcf9c" textLength="72" lengthAdjust="spacingAndGlyphs">─────────</tspan><tspan x="472" fill="#ffb347" textLength="8" lengthAdjust="spacingAndGlyphs">┴</tspan><tspan x="480" fill="#efcf9c" textLength="40" lengthAdjust="spacingAndGlyphs">─────</tspan><tspan x="528" fill="#a79fb8">container</tspan><tspan x="608" fill="#efcf9c" textLength="48" lengthAdjust="spacingAndGlyphs">─╮  ╭─</tspan><tspan x="664" fill="#efcf9c" font-weight="bold">x-site</tspan><tspan x="720" fill="#efcf9c" textLength="64" lengthAdjust="spacingAndGlyphs">────────</tspan><tspan x="784" fill="#ffb347" textLength="8" lengthAdjust="spacingAndGlyphs">┴</tspan><tspan x="792" fill="#efcf9c" textLength="40" lengthAdjust="spacingAndGlyphs">─────</tspan><tspan x="840" fill="#a79fb8">container</tspan><tspan x="920" fill="#efcf9c" textLength="48" lengthAdjust="spacingAndGlyphs">─╮  ╭─</tspan><tspan x="976" fill="#efcf9c" font-weight="bold">y-robot</tspan><tspan x="1040" fill="#efcf9c" textLength="56" lengthAdjust="spacingAndGlyphs">───────</tspan><tspan x="1096" fill="#ffb347" textLength="8" lengthAdjust="spacingAndGlyphs">┴</tspan><tspan x="1104" fill="#efcf9c" textLength="40" lengthAdjust="spacingAndGlyphs">─────</tspan><tspan x="1152" fill="#a79fb8">container</tspan><tspan x="1232" fill="#efcf9c" textLength="16" lengthAdjust="spacingAndGlyphs">─╮</tspan></text>
+<text y="204"><tspan x="16" fill="#efcf9c" textLength="1232" lengthAdjust="spacingAndGlyphs">│                                   │  │                                   │  │                                   │  │                                   │</tspan></text>
+<text y="220"><tspan x="16" fill="#efcf9c" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="32" fill="#e6c58e" textLength="128" lengthAdjust="spacingAndGlyphs">┌──────────────┐</tspan><tspan x="168" fill="#2bb8b0" textLength="128" lengthAdjust="spacingAndGlyphs">┌──────────────┐</tspan><tspan x="304" fill="#efcf9c" textLength="32" lengthAdjust="spacingAndGlyphs">│  │</tspan><tspan x="344" fill="#e6c58e" textLength="128" lengthAdjust="spacingAndGlyphs">┌──────────────┐</tspan><tspan x="480" fill="#ff8c1a" textLength="128" lengthAdjust="spacingAndGlyphs">┌──────────────┐</tspan><tspan x="616" fill="#efcf9c" textLength="32" lengthAdjust="spacingAndGlyphs">│  │</tspan><tspan x="656" fill="#e6c58e" textLength="128" lengthAdjust="spacingAndGlyphs">┌──────────────┐</tspan><tspan x="792" fill="#ff8c1a" textLength="128" lengthAdjust="spacingAndGlyphs">┌──────────────┐</tspan><tspan x="928" fill="#efcf9c" textLength="32" lengthAdjust="spacingAndGlyphs">│  │</tspan><tspan x="968" fill="#e6c58e" textLength="128" lengthAdjust="spacingAndGlyphs">┌──────────────┐</tspan><tspan x="1104" fill="#e85a8a" textLength="128" lengthAdjust="spacingAndGlyphs">┌──────────────┐</tspan><tspan x="1240" fill="#efcf9c" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan></text>
+<text y="236"><tspan x="16" fill="#efcf9c" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="32" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="40" fill="#efcf9c" font-weight="bold">project folder</tspan><tspan x="152" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="168" fill="#2bb8b0" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="216" fill="#efcf9c" font-weight="bold">home</tspan><tspan x="288" fill="#2bb8b0" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="304" fill="#efcf9c" textLength="32" lengthAdjust="spacingAndGlyphs">│  │</tspan><tspan x="344" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="352" fill="#efcf9c" font-weight="bold">project folder</tspan><tspan x="464" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="480" fill="#ff8c1a" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="528" fill="#efcf9c" font-weight="bold">home</tspan><tspan x="600" fill="#ff8c1a" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="616" fill="#efcf9c" textLength="32" lengthAdjust="spacingAndGlyphs">│  │</tspan><tspan x="656" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="664" fill="#efcf9c" font-weight="bold">project folder</tspan><tspan x="776" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="792" fill="#ff8c1a" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="840" fill="#efcf9c" font-weight="bold">home</tspan><tspan x="912" fill="#ff8c1a" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="928" fill="#efcf9c" textLength="32" lengthAdjust="spacingAndGlyphs">│  │</tspan><tspan x="968" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="976" fill="#efcf9c" font-weight="bold">project folder</tspan><tspan x="1088" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="1104" fill="#e85a8a" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="1152" fill="#efcf9c" font-weight="bold">home</tspan><tspan x="1224" fill="#e85a8a" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="1240" fill="#efcf9c" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan></text>
+<text y="252"><tspan x="16" fill="#efcf9c" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="32" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="40" fill="#a79fb8">rw</tspan><tspan x="64" fill="#a79fb8" textLength="8" lengthAdjust="spacingAndGlyphs">·</tspan><tspan x="80" fill="#a79fb8">same path</tspan><tspan x="152" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="168" fill="#2bb8b0" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="176" fill="#a79fb8">rw</tspan><tspan x="200" fill="#a79fb8" textLength="8" lengthAdjust="spacingAndGlyphs">·</tspan><tspan x="216" fill="#a79fb8">/home/you</tspan><tspan x="288" fill="#2bb8b0" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="304" fill="#efcf9c" textLength="32" lengthAdjust="spacingAndGlyphs">│  │</tspan><tspan x="344" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="352" fill="#a79fb8">rw</tspan><tspan x="376" fill="#a79fb8" textLength="8" lengthAdjust="spacingAndGlyphs">·</tspan><tspan x="392" fill="#a79fb8">same path</tspan><tspan x="464" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="480" fill="#ff8c1a" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="488" fill="#a79fb8">rw</tspan><tspan x="512" fill="#a79fb8" textLength="8" lengthAdjust="spacingAndGlyphs">·</tspan><tspan x="528" fill="#a79fb8">/home/you</tspan><tspan x="600" fill="#ff8c1a" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="616" fill="#efcf9c" textLength="32" lengthAdjust="spacingAndGlyphs">│  │</tspan><tspan x="656" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="664" fill="#a79fb8">rw</tspan><tspan x="688" fill="#a79fb8" textLength="8" lengthAdjust="spacingAndGlyphs">·</tspan><tspan x="704" fill="#a79fb8">same path</tspan><tspan x="776" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="792" fill="#ff8c1a" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="800" fill="#a79fb8">rw</tspan><tspan x="824" fill="#a79fb8" textLength="8" lengthAdjust="spacingAndGlyphs">·</tspan><tspan x="840" fill="#a79fb8">/home/you</tspan><tspan x="912" fill="#ff8c1a" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="928" fill="#efcf9c" textLength="32" lengthAdjust="spacingAndGlyphs">│  │</tspan><tspan x="968" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="976" fill="#a79fb8">rw</tspan><tspan x="1000" fill="#a79fb8" textLength="8" lengthAdjust="spacingAndGlyphs">·</tspan><tspan x="1016" fill="#a79fb8">same path</tspan><tspan x="1088" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="1104" fill="#e85a8a" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="1112" fill="#a79fb8">rw</tspan><tspan x="1136" fill="#a79fb8" textLength="8" lengthAdjust="spacingAndGlyphs">·</tspan><tspan x="1152" fill="#a79fb8">/home/you</tspan><tspan x="1224" fill="#e85a8a" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="1240" fill="#efcf9c" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan></text>
+<text y="268"><tspan x="16" fill="#efcf9c" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="32" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="48" fill="#846972" textLength="88" lengthAdjust="spacingAndGlyphs">· · · · · ·</tspan><tspan x="152" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="168" fill="#2bb8b0" textLength="128" lengthAdjust="spacingAndGlyphs">│▄▀▄▀▄▀▄▀▄▀▄▀▄▀│</tspan><tspan x="304" fill="#efcf9c" textLength="32" lengthAdjust="spacingAndGlyphs">│  │</tspan><tspan x="344" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="360" fill="#846972" textLength="88" lengthAdjust="spacingAndGlyphs">· · · · · ·</tspan><tspan x="464" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="480" fill="#ff8c1a" textLength="128" lengthAdjust="spacingAndGlyphs">│▄▀▄▀▄▀▄▀▄▀▄▀▄▀│</tspan><tspan x="616" fill="#efcf9c" textLength="32" lengthAdjust="spacingAndGlyphs">│  │</tspan><tspan x="656" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="672" fill="#846972" textLength="88" lengthAdjust="spacingAndGlyphs">· · · · · ·</tspan><tspan x="776" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="792" fill="#ff8c1a" textLength="128" lengthAdjust="spacingAndGlyphs">│▄▀▄▀▄▀▄▀▄▀▄▀▄▀│</tspan><tspan x="928" fill="#efcf9c" textLength="32" lengthAdjust="spacingAndGlyphs">│  │</tspan><tspan x="968" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="984" fill="#846972" textLength="88" lengthAdjust="spacingAndGlyphs">· · · · · ·</tspan><tspan x="1088" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="1104" fill="#e85a8a" textLength="128" lengthAdjust="spacingAndGlyphs">│▄▀▄▀▄▀▄▀▄▀▄▀▄▀│</tspan><tspan x="1240" fill="#efcf9c" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan></text>
+<text y="284"><tspan x="16" fill="#efcf9c" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="32" fill="#e6c58e" textLength="128" lengthAdjust="spacingAndGlyphs">└───────┬──────┘</tspan><tspan x="168" fill="#2bb8b0" textLength="128" lengthAdjust="spacingAndGlyphs">└───────┬──────┘</tspan><tspan x="304" fill="#efcf9c" textLength="32" lengthAdjust="spacingAndGlyphs">│  │</tspan><tspan x="344" fill="#e6c58e" textLength="128" lengthAdjust="spacingAndGlyphs">└───────┬──────┘</tspan><tspan x="480" fill="#ff8c1a" textLength="128" lengthAdjust="spacingAndGlyphs">└───────┬──────┘</tspan><tspan x="616" fill="#efcf9c" textLength="32" lengthAdjust="spacingAndGlyphs">│  │</tspan><tspan x="656" fill="#e6c58e" textLength="128" lengthAdjust="spacingAndGlyphs">└───────┬──────┘</tspan><tspan x="792" fill="#ff8c1a" textLength="128" lengthAdjust="spacingAndGlyphs">└───────┬──────┘</tspan><tspan x="928" fill="#efcf9c" textLength="32" lengthAdjust="spacingAndGlyphs">│  │</tspan><tspan x="968" fill="#e6c58e" textLength="128" lengthAdjust="spacingAndGlyphs">└───────┬──────┘</tspan><tspan x="1104" fill="#e85a8a" textLength="128" lengthAdjust="spacingAndGlyphs">└───────┬──────┘</tspan><tspan x="1240" fill="#efcf9c" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan></text>
+<text y="300"><tspan x="16" fill="#efcf9c" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="96" fill="#e6c58e" font-weight="bold">^</tspan><tspan x="232" fill="#2bb8b0" font-weight="bold">^</tspan><tspan x="304" fill="#efcf9c" textLength="32" lengthAdjust="spacingAndGlyphs">│  │</tspan><tspan x="408" fill="#e6c58e" font-weight="bold">^</tspan><tspan x="544" fill="#ff8c1a" font-weight="bold">^</tspan><tspan x="616" fill="#efcf9c" textLength="32" lengthAdjust="spacingAndGlyphs">│  │</tspan><tspan x="720" fill="#e6c58e" font-weight="bold">^</tspan><tspan x="856" fill="#ff8c1a" font-weight="bold">^</tspan><tspan x="928" fill="#efcf9c" textLength="32" lengthAdjust="spacingAndGlyphs">│  │</tspan><tspan x="1032" fill="#e6c58e" font-weight="bold">^</tspan><tspan x="1168" fill="#e85a8a" font-weight="bold">^</tspan><tspan x="1240" fill="#efcf9c" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan></text>
+<text y="316"><tspan x="16" fill="#efcf9c" textLength="80" lengthAdjust="spacingAndGlyphs">╰─────────</tspan><tspan x="96" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">┼</tspan><tspan x="104" fill="#efcf9c" textLength="128" lengthAdjust="spacingAndGlyphs">────────────────</tspan><tspan x="232" fill="#2bb8b0" textLength="8" lengthAdjust="spacingAndGlyphs">┼</tspan><tspan x="240" fill="#efcf9c" textLength="168" lengthAdjust="spacingAndGlyphs">────────╯  ╰─────────</tspan><tspan x="408" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">┼</tspan><tspan x="416" fill="#efcf9c" textLength="128" lengthAdjust="spacingAndGlyphs">────────────────</tspan><tspan x="544" fill="#ff8c1a" textLength="8" lengthAdjust="spacingAndGlyphs">┼</tspan><tspan x="552" fill="#efcf9c" textLength="168" lengthAdjust="spacingAndGlyphs">────────╯  ╰─────────</tspan><tspan x="720" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">┼</tspan><tspan x="728" fill="#efcf9c" textLength="128" lengthAdjust="spacingAndGlyphs">────────────────</tspan><tspan x="856" fill="#ff8c1a" textLength="8" lengthAdjust="spacingAndGlyphs">┼</tspan><tspan x="864" fill="#efcf9c" textLength="168" lengthAdjust="spacingAndGlyphs">────────╯  ╰─────────</tspan><tspan x="1032" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">┼</tspan><tspan x="1040" fill="#efcf9c" textLength="128" lengthAdjust="spacingAndGlyphs">────────────────</tspan><tspan x="1168" fill="#e85a8a" textLength="8" lengthAdjust="spacingAndGlyphs">┼</tspan><tspan x="1176" fill="#efcf9c" textLength="72" lengthAdjust="spacingAndGlyphs">────────╯</tspan></text>
+<text y="332"><tspan x="96" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="232" fill="#2bb8b0" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="408" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="544" fill="#ff8c1a" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="720" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="856" fill="#ff8c1a" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="1032" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="1168" fill="#e85a8a" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan></text>
+<text y="348"><tspan x="8" fill="#d27a52" textLength="72" lengthAdjust="spacingAndGlyphs">▄  ▄▄  ▄▄</tspan><tspan x="96" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="104" fill="#d27a52" textLength="128" lengthAdjust="spacingAndGlyphs">▄  ▄▄  ▄▄  ▄▄  ▄</tspan><tspan x="232" fill="#2bb8b0" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="256" fill="#d27a52" textLength="144" lengthAdjust="spacingAndGlyphs">▄▄  ▄▄  ▄▄  ▄▄  ▄▄</tspan><tspan x="408" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="416" fill="#d27a52" textLength="112" lengthAdjust="spacingAndGlyphs">▄▄  ▄▄  ▄▄  ▄▄</tspan><tspan x="544" fill="#ff8c1a" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="552" fill="#d27a52" textLength="168" lengthAdjust="spacingAndGlyphs">▄  ▄▄  ▄▄  ▄▄  ▄▄  ▄▄</tspan><tspan x="720" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="736" fill="#d27a52" textLength="112" lengthAdjust="spacingAndGlyphs">▄▄  ▄▄  ▄▄  ▄▄</tspan><tspan x="856" fill="#ff8c1a" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="864" fill="#d27a52" textLength="168" lengthAdjust="spacingAndGlyphs">▄▄  ▄▄  ▄▄  ▄▄  ▄▄  ▄</tspan><tspan x="1032" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="1056" fill="#d27a52" textLength="112" lengthAdjust="spacingAndGlyphs">▄▄  ▄▄  ▄▄  ▄▄</tspan><tspan x="1168" fill="#e85a8a" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="1184" fill="#d27a52" textLength="72" lengthAdjust="spacingAndGlyphs">▄▄  ▄▄  ▄</tspan></text>
+<text y="364"><tspan x="8" fill="#b06a4c">_____|_____</tspan><tspan x="96" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="104" fill="#b06a4c">_____|_____|____</tspan><tspan x="232" fill="#2bb8b0" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="240" fill="#b06a4c">|_____|_____|_____|__</tspan><tspan x="408" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="416" fill="#b06a4c">__|_____|_____|_</tspan><tspan x="544" fill="#ff8c1a" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="552" fill="#b06a4c">___|_____|_____|_____</tspan><tspan x="720" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="728" fill="#b06a4c">_____|_____|____</tspan><tspan x="856" fill="#ff8c1a" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="864" fill="#b06a4c">|_____|_____|_____|__</tspan><tspan x="1032" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="1040" fill="#b06a4c">__|_____|_____|_</tspan><tspan x="1168" fill="#e85a8a" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="1176" fill="#b06a4c">___|_____|</tspan></text>
+<text y="380"><tspan x="16" fill="#a79fb8" font-weight="bold">HOST</tspan><tspan x="96" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="232" fill="#2bb8b0" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="408" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="544" fill="#ff8c1a" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="720" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="856" fill="#ff8c1a" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="1032" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="1168" fill="#e85a8a" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan></text>
+<text y="396"><tspan x="16" fill="#e6c58e" textLength="160" lengthAdjust="spacingAndGlyphs">┌─────────┴────────┐</tspan><tspan x="232" fill="#2bb8b0" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="328" fill="#e6c58e" textLength="160" lengthAdjust="spacingAndGlyphs">┌─────────┴────────┐</tspan><tspan x="544" fill="#ff8c1a" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="640" fill="#e6c58e" textLength="160" lengthAdjust="spacingAndGlyphs">┌─────────┴────────┐</tspan><tspan x="856" fill="#ff8c1a" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="952" fill="#e6c58e" textLength="160" lengthAdjust="spacingAndGlyphs">┌─────────┴────────┐</tspan><tspan x="1168" fill="#e85a8a" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan></text>
+<text y="412"><tspan x="16" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="48" fill="#e6c58e">~/perso/blog</tspan><tspan x="168" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="232" fill="#2bb8b0" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="328" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="352" fill="#e6c58e">~/client_x/api</tspan><tspan x="480" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="544" fill="#ff8c1a" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="640" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="656" fill="#e6c58e">~/client_x/site</tspan><tspan x="792" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="856" fill="#ff8c1a" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="952" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="968" fill="#e6c58e">~/client_y/robot</tspan><tspan x="1104" fill="#e6c58e" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="1168" fill="#e85a8a" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan></text>
+<text y="428"><tspan x="16" fill="#e6c58e" textLength="160" lengthAdjust="spacingAndGlyphs">└──────────────────┘</tspan><tspan x="232" fill="#2bb8b0" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="328" fill="#e6c58e" textLength="160" lengthAdjust="spacingAndGlyphs">└──────────────────┘</tspan><tspan x="544" fill="#ff8c1a" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="640" fill="#e6c58e" textLength="160" lengthAdjust="spacingAndGlyphs">└──────────────────┘</tspan><tspan x="856" fill="#ff8c1a" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="952" fill="#e6c58e" textLength="160" lengthAdjust="spacingAndGlyphs">└──────────────────┘</tspan><tspan x="1168" fill="#e85a8a" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan></text>
+<text y="444"><tspan x="232" fill="#2bb8b0" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan><tspan x="544" fill="#ff8c1a" textLength="320" lengthAdjust="spacingAndGlyphs">│                                      │</tspan><tspan x="1168" fill="#e85a8a" textLength="8" lengthAdjust="spacingAndGlyphs">│</tspan></text>
+<text y="460"><tspan x="16" fill="#2bb8b0" textLength="296" lengthAdjust="spacingAndGlyphs">╔══════════════════════════╧════════╗</tspan><tspan x="328" fill="#ff8c1a" textLength="608" lengthAdjust="spacingAndGlyphs">╔══════════════════════════╧══════════════════════════════════════╧════════╗</tspan><tspan x="952" fill="#e85a8a" textLength="296" lengthAdjust="spacingAndGlyphs">╔══════════════════════════╧════════╗</tspan></text>
+<text y="476"><tspan x="16" fill="#2bb8b0" textLength="8" lengthAdjust="spacingAndGlyphs">║</tspan><tspan x="32" fill="#a79fb8">profile</tspan><tspan x="96" fill="#2bb8b0" font-weight="bold">personal</tspan><tspan x="304" fill="#2bb8b0" textLength="8" lengthAdjust="spacingAndGlyphs">║</tspan><tspan x="328" fill="#ff8c1a" textLength="8" lengthAdjust="spacingAndGlyphs">║</tspan><tspan x="344" fill="#a79fb8">profile</tspan><tspan x="408" fill="#ff8c1a" font-weight="bold">client_x</tspan><tspan x="712" fill="#a79fb8">shared by x-api and x-site</tspan><tspan x="928" fill="#ff8c1a" textLength="8" lengthAdjust="spacingAndGlyphs">║</tspan><tspan x="952" fill="#e85a8a" textLength="8" lengthAdjust="spacingAndGlyphs">║</tspan><tspan x="968" fill="#a79fb8">profile</tspan><tspan x="1032" fill="#e85a8a" font-weight="bold">client_y</tspan><tspan x="1240" fill="#e85a8a" textLength="8" lengthAdjust="spacingAndGlyphs">║</tspan></text>
+<text y="492"><tspan x="16" fill="#2bb8b0" textLength="8" lengthAdjust="spacingAndGlyphs">║</tspan><tspan x="32" fill="#efcf9c">~/.config/ryad/profiles/personal</tspan><tspan x="304" fill="#2bb8b0" textLength="8" lengthAdjust="spacingAndGlyphs">║</tspan><tspan x="328" fill="#ff8c1a" textLength="8" lengthAdjust="spacingAndGlyphs">║</tspan><tspan x="344" fill="#efcf9c">~/.config/ryad/profiles/client_x</tspan><tspan x="928" fill="#ff8c1a" textLength="8" lengthAdjust="spacingAndGlyphs">║</tspan><tspan x="952" fill="#e85a8a" textLength="8" lengthAdjust="spacingAndGlyphs">║</tspan><tspan x="968" fill="#efcf9c">~/.config/ryad/profiles/client_y</tspan><tspan x="1240" fill="#e85a8a" textLength="8" lengthAdjust="spacingAndGlyphs">║</tspan></text>
+<text y="508"><tspan x="16" fill="#2bb8b0" textLength="8" lengthAdjust="spacingAndGlyphs">║</tspan><tspan x="32" fill="#a79fb8">logins</tspan><tspan x="88" fill="#a79fb8" textLength="8" lengthAdjust="spacingAndGlyphs">·</tspan><tspan x="104" fill="#a79fb8">API keys</tspan><tspan x="176" fill="#a79fb8" textLength="8" lengthAdjust="spacingAndGlyphs">·</tspan><tspan x="192" fill="#a79fb8">shell history</tspan><tspan x="304" fill="#2bb8b0" textLength="8" lengthAdjust="spacingAndGlyphs">║</tspan><tspan x="328" fill="#ff8c1a" textLength="8" lengthAdjust="spacingAndGlyphs">║</tspan><tspan x="344" fill="#a79fb8">logins</tspan><tspan x="400" fill="#a79fb8" textLength="8" lengthAdjust="spacingAndGlyphs">·</tspan><tspan x="416" fill="#a79fb8">API keys</tspan><tspan x="488" fill="#a79fb8" textLength="8" lengthAdjust="spacingAndGlyphs">·</tspan><tspan x="504" fill="#a79fb8">shell history</tspan><tspan x="928" fill="#ff8c1a" textLength="8" lengthAdjust="spacingAndGlyphs">║</tspan><tspan x="952" fill="#e85a8a" textLength="8" lengthAdjust="spacingAndGlyphs">║</tspan><tspan x="968" fill="#a79fb8">logins</tspan><tspan x="1024" fill="#a79fb8" textLength="8" lengthAdjust="spacingAndGlyphs">·</tspan><tspan x="1040" fill="#a79fb8">API keys</tspan><tspan x="1112" fill="#a79fb8" textLength="8" lengthAdjust="spacingAndGlyphs">·</tspan><tspan x="1128" fill="#a79fb8">shell history</tspan><tspan x="1240" fill="#e85a8a" textLength="8" lengthAdjust="spacingAndGlyphs">║</tspan></text>
+<text y="524"><tspan x="16" fill="#2bb8b0" textLength="296" lengthAdjust="spacingAndGlyphs">╚═══════════════════════════════════╝</tspan><tspan x="328" fill="#ff8c1a" textLength="608" lengthAdjust="spacingAndGlyphs">╚══════════════════════════════════════════════════════════════════════════╝</tspan><tspan x="952" fill="#e85a8a" textLength="296" lengthAdjust="spacingAndGlyphs">╚═══════════════════════════════════╝</tspan></text>
+<text y="556"><tspan x="16" fill="#ff7a6a" font-weight="bold">outside the walls:  x</tspan><tspan x="192" fill="#f5b18a">~/.ssh</tspan><tspan x="264" fill="#ff7a6a" font-weight="bold">x</tspan><tspan x="280" fill="#f5b18a">~/Documents</tspan><tspan x="392" fill="#ff7a6a" font-weight="bold">x</tspan><tspan x="408" fill="#f5b18a">other projects</tspan><tspan x="544" fill="#ff7a6a" font-weight="bold">x</tspan><tspan x="560" fill="#f5b18a">host keyring &amp; D-Bus</tspan><tspan x="800" fill="#ffb347" font-weight="bold">not isolated:</tspan><tspan x="920" fill="#efcf9c">your display (Wayland / X11)</tspan><tspan x="1152" fill="#efcf9c" textLength="8" lengthAdjust="spacingAndGlyphs">·</tspan><tspan x="1168" fill="#efcf9c">network</tspan></text>
+<text y="588"><tspan x="0" fill="#ffd0a0">~    ~~  ~     ~     ~   ~           ~~~               ~     ~   ~  ~  ~   ~ ~       ~ ~~  ~~               ~    ~  ~  ~      ~~             ~   ~ ~~  ~     ~</tspan></text>
+<text y="604"><tspan x="0" fill="#c86a8a">-   -- -  --   --- --    --      -    ---- - -      - --     --    -  -    -  ---    -----  - --    ---   --             -  -       - -       - -- --- -- -</tspan></text>
+<text y="620"><tspan x="24" fill="#7fb0d0">~   ~  ~   ~~~       ~    ~       ~~     ~~~  ~  ~    ~~~  ~   ~              ~~    ~~~~   ~    ~~ ~   ~   ~    ~~ ~  ~    ~   ~    ~     ~  ~  ~ ~       ~</tspan></text>
+</g></g></svg>

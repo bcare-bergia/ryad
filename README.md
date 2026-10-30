@@ -48,6 +48,10 @@ And you can run apps with graphical interfaces like Claude Desktop, VS Codium, F
    none of them sees ~/.ssh, ~/Documents, or the others
 ```
 
+<p align="center">
+  <img src="art/environments.svg" alt="ryad environments: one image shared by four containers; each container mounts only its project folder and one profile home, and the rest of your home stays outside">
+</p>
+
 It doesn't matter which model or vendor you use. A few tools come preinstalled, and anything else that runs on Debian or Ubuntu can be added.
 
 

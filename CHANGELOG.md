@@ -4,7 +4,9 @@ What changed in each release of ryad, newest first. The format follows [Keep a C
 
 To release: rename `Unreleased` to the version and date, e.g. `## [0.1.0] - 2026-11-02`, commit, tag `v0.1.0`, then run `./release.sh`, which takes the version from that tag. The installer shows these notes on upgrade, and they become the GitHub release notes.
 
-## [Unreleased]
+## v0.1.0
+
+First release with core functionality.
 
 ### Added
 
