@@ -5,8 +5,8 @@
 <h1 align="center">ryad</h1>
 
 <p align="center">
-  <b>Sandboxed workspaces for AI agents and LLM tools on Linux.</b><br>
-  One folder in, everything else out.
+  <b>Same tools, separate rooms.</b><br>
+  A calm way to use LLM-powered tools on Linux, one project at a time.
 </p>
 
 <p align="center">
@@ -22,27 +22,33 @@
 
 ## Why ryad?
 
-LLM-powered tools are most useful when they can act: run commands, install packages, edit files, browse. You probably don't want them doing that **next to your SSH keys, your other projects and the rest of your home directory**.
+I work on quite a few different things: my own projects, and jobs for a handful of clients. I use LLM-powered tools for all of them (coding agents, chat apps, an editor or two), and I wanted two things that don't naturally go together:
 
-ryad gives each project its own **environment**: a rootless Podman container that you enter from a terminal and that stays around until you remove it. Inside, an agent can do what it likes (even `sudo apt install`), but it only sees:
+- the **same tools everywhere**, set up once, not reinstalled for every project;
+- each project kept **properly apart**. Client X's code, accounts and API keys have no business being near client Y's, and neither should be anywhere near my personal stuff.
 
-- 📁 **one workspace**: your project folder, read-write, at the same path as on the host
-- 👤 **one profile**: a private home with your logins, API keys, settings and history
+On top of that, these tools like to get their hands dirty: they run commands, install packages, edit files. That's what makes them useful, but I'd rather they did it somewhere other than my whole home directory.
+
+So ryad gives each project its own **environment**, a small Podman container you step into from a terminal. Every environment is built from the same image, so your tools are always there. And each one only sees two things:
+
+- its **project folder**, where the work happens;
+- a **profile**: a home directory holding the logins, API keys and history for one context. One for your personal projects, one per client, or whatever split suits you.
+
+Your SSH keys, your documents and your other projects stay outside.
 
 ```
- Host                                  Environment "acme"
- ───────────────────────────────       ───────────────────────────────────────
- ~/projects/acme   ─────────────────▶  ~/projects/acme       (read-write)
- ~/.config/ryad/profiles/work/home ─▶  /home/you             (logins, settings)
- Wayland / X11 display ────────────▶   GUI apps open on your desktop
-
- ~/.ssh, ~/Documents, other projects,
- host keyring, host D-Bus …            ✗ not visible
+      one image, the same tools in every room: pi, claude, codium, git…
+ ┌──────────────────────┬──────────────────────┬──────────────────────┐
+ │ environment "blog"   │ environment "x-api"  │ environment "y-site" │
+ │ ~/perso/blog         │ ~/clients/x/api      │ ~/clients/y/site     │
+ │ profile: personal    │ profile: client-x    │ profile: client-y    │
+ └──────────────────────┴──────────────────────┴──────────────────────┘
+   none of them sees ~/.ssh, ~/Documents, or the others
 ```
 
-ryad doesn't care which model or vendor you use. It ships with a few agents ready to go, and anything else that runs on Debian or Ubuntu can be added to the image: another agent CLI, a local model client, your own scripts.
+It doesn't matter which model or vendor you use. A few tools come preinstalled, and anything else that runs on Debian or Ubuntu can be added.
 
-A *riad* is a house built around an inner courtyard: open on the inside, walled off from the street.
+A *riad* is a traditional house built around an inner courtyard: open on the inside, walled off from the street. That felt about right.
 
 ## What's inside
 
@@ -82,11 +88,12 @@ See [Getting started](docs/getting-started.md) for the details.
 
 ## Examples
 
-**Keep work and personal accounts apart.** Each profile has its own logins, keys and history.
+**Keep clients apart.** Each profile has its own logins, keys and history.
 
 ```bash
-cd ~/work/billing && ryad --profile=work
-cd ~/hobby/game   && ryad --profile=personal
+cd ~/clients/x/api  && ryad --profile=client-x
+cd ~/clients/y/site && ryad --profile=client-y
+cd ~/perso/blog     && ryad --profile=personal
 ```
 
 **Open another terminal in the same environment**, from any folder:
