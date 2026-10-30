@@ -22,12 +22,12 @@
 
 ## Why ryad?
 
-I work on quite a few different things: my own projects, and jobs for a handful of clients. I use LLM-powered tools for all of them (coding agents, chat apps, an editor or two), and I wanted two things that don't naturally go together:
+I work on quite a few different things: my own projects, and also professional projects for a handful of clients. I wanted two things that don't naturally go together:
 
 - the **same tools everywhere**, set up once, not reinstalled for every project;
 - each project kept **properly apart**. Client X's code, accounts and API keys have no business being near client Y's, and neither should be anywhere near my personal stuff.
 
-On top of that, these tools like to get their hands dirty: they run commands, install packages, edit files. That's what makes them useful, but I'd rather they did it somewhere other than my whole home directory.
+On top of that, LLM-powered tools have a tendency to overflow outside of their expected playground : they run commands, install packages, edit files. That's what makes them useful, but I'd rather they did it somewhere other than my whole home directory.
 
 So ryad gives each project its own **environment**, a small Podman container you step into from a terminal. Every environment is built from the same image, so your tools are always there. And each one only sees two things:
 
@@ -38,17 +38,16 @@ Your SSH keys, your documents and your other projects stay outside.
 
 ```
       one image, the same tools in every room: pi, claude, codium, git…
- ┌──────────────────────┬──────────────────────┬──────────────────────┐
- │ environment "blog"   │ environment "x-api"  │ environment "y-site" │
- │ ~/perso/blog         │ ~/clients/x/api      │ ~/clients/y/site     │
- │ profile: personal    │ profile: client-x    │ profile: client-y    │
- └──────────────────────┴──────────────────────┴──────────────────────┘
+ ┌──────────────────────┬──────────────────────┬──────────────────────┬──────────────────────┐
+ │ environment "blog"   │ environment "x-api"  │ environment "x-site" │ environment "y-robot"│
+ │ ~/perso/blog         │ ~/client_x/api       │ ~/client_x/sit e     │ ~/client_y/robot     │
+ │ profile: personal    │ profile: client_x    │ profile: client_x    │ profile: client_y    │
+ └──────────────────────┴──────────────────────┴─────────────────────────────────────────────┘
    none of them sees ~/.ssh, ~/Documents, or the others
 ```
 
 It doesn't matter which model or vendor you use. A few tools come preinstalled, and anything else that runs on Debian or Ubuntu can be added.
 
-A *riad* is a traditional house built around an inner courtyard: open on the inside, walled off from the street. That felt about right.
 
 ## What's inside
 
@@ -95,6 +94,15 @@ cd ~/clients/x/api  && ryad --profile=client-x
 cd ~/clients/y/site && ryad --profile=client-y
 cd ~/perso/blog     && ryad --profile=personal
 ```
+
+**Or give an environment a name of your own.** By default an environment is named after its folder, but you can name it yourself when you create it, along with its folder and profile. From then on, the name is all it takes to step back in, wherever you are:
+
+```bash
+ryad projectx --workspace ~/code/projectx --profile=personal   # create it, and step in
+ryad projectx                                                  # later, from any folder
+```
+
+Without `--workspace`, the new environment gets the current folder, and ryad asks first, so a typo doesn't quietly create a new environment.
 
 **Open another terminal in the same environment**, from any folder:
 
