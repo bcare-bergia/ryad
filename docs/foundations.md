@@ -114,7 +114,7 @@ Each image records the version and stamp of the bundle that built it (`org.ryad.
 
 ## Releases
 
-A release is a git tag `vX.Y.Z` (semantic versioning), its section in [CHANGELOG.md](../CHANGELOG.md), and the files [release.sh](../release.sh) makes from the tag:
+A release is a git tag `vX.Y.Z` (semantic versioning), its section in [CHANGELOG.md](../CHANGELOG.md), and the files [release.sh](../release.sh) makes from the tagged commit:
 
 | File | |
 |---|---|
@@ -127,15 +127,17 @@ To make one:
 
 1. In `CHANGELOG.md`, rename `## [Unreleased]` to `## [X.Y.Z] - YYYY-MM-DD` and add a new, empty `Unreleased` above it. Commit.
 2. Try it: `./release.sh --snapshot`, then install the snapshot on a real machine, over the previous release.
-3. Tag without pushing: `git tag -a vX.Y.Z -m "ryad X.Y.Z"`, then `./release.sh --key=~/.ssh/KEY` (or set `RYAD_SIGNING_KEY`). If it fails, fix, commit and move the tag, which is easy while it isn't pushed. The key must be one of those listed at `github.com/bcare-bergia.keys`, since that is what users check the signature against.
+3. `./release.sh --key=~/.ssh/KEY --version=X.Y.Z` (or set `RYAD_SIGNING_KEY`). It tags the commit `vX.Y.Z` only once every check passed; if it fails, nothing is tagged: fix, commit and run it again. The key must be one of those listed at `github.com/bcare-bergia.keys`, since that is what users check the signature against.
 4. `git push origin main vX.Y.Z`, then `./release.sh --key=~/.ssh/KEY --publish`.
 5. Review the draft release on GitHub, then publish it there, or with `gh release edit vX.Y.Z --draft=false`. Once published, a version is final: fix it with a new one.
 
 `./release.sh --help` has the details, including what to check by hand that the script can't.
 
-`release.sh` takes the version from git: the current commit must carry exactly one `vX.Y.Z` tag. It builds from that tag with `git archive`, not from the working tree, with the dates taken from the tagged commit. It builds everything twice and stops if the two differ, then runs [tests/installer-test.sh](../tests/installer-test.sh) (install, upgrade, a damaged copy, uninstall, in a throwaway `HOME`) before signing. The files land in `dist/release/X.Y.Z/`. With `--publish`, it asks, then uploads them with `gh` as a draft release, which only the repository's collaborators can see until it's published.
+`release.sh --version=X.Y.Z` builds the current commit with `git archive`, not the working tree (it refuses uncommitted changes to tracked files), with the dates taken from that commit. It checks the version is higher than the last tag, builds everything twice and stops if the two differ, then runs [tests/installer-test.sh](../tests/installer-test.sh) (install, upgrade, a damaged copy, uninstall, in a throwaway `HOME`) and signs. The files land in `dist/release/X.Y.Z/`, and only then does it tag the commit `vX.Y.Z`, locally: a release tag always means every check passed. The tag doesn't change the bytes, so `--publish`, which takes the version from the tag on the current commit, rebuilds exactly the same files, asks, then uploads them with `gh` as a draft release, which only the repository's collaborators can see until it's published.
 
-`./release.sh --snapshot` does the same from the working tree, unsigned, into `dist/release/snapshot/`, to try the installer before tagging.
+`./release.sh --snapshot` does the same from the working tree, unsigned, into `dist/release/snapshot/`, to try the installer before releasing.
+
+`--pre-check` runs all of these checks (with `--publish`, its checks too) in a temporary directory and stops there: nothing lands in `dist/`, nothing is tagged or uploaded.
 
 The installer checks the payload's SHA-256 before extracting anything, copies each file next to its destination and renames it over, and records what it installed in `share/ryad/install.manifest` under the prefix. That record is what `--uninstall` removes, and what an upgrade compares against to remove files a newer version no longer has.
 

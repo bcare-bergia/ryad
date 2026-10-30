@@ -1,25 +1,37 @@
 #!/usr/bin/env bash
-# release.sh: make the release files of ryad from the vX.Y.Z tag on the
-# current commit, and optionally upload them as a draft GitHub release.
+# release.sh: make the release files of ryad from the current commit, tag it
+# vX.Y.Z once every check passed, and optionally upload them as a draft GitHub
+# release.
 #
 # USAGE
-#   ./release.sh --snapshot                  try a release of the working tree
-#   ./release.sh --key=FILE                  build, test and sign vX.Y.Z locally
-#   ./release.sh --key=FILE --publish        the same, then upload it as a draft
+#   ./release.sh --snapshot                    try a release of the working tree
+#   ./release.sh --key=FILE --version=X.Y.Z    build, test and sign HEAD, then tag it
+#   ./release.sh --key=FILE --publish          rebuild the tagged HEAD, upload a draft
+#   Add --pre-check to either of the last two to run all the checks and release
+#   nothing.
 #
 #   --snapshot   build from the working tree (tracked and untracked files, not
 #                ignored ones), unsigned, into dist/release/snapshot/. For
-#                trying the installer before tagging; never published.
+#                trying the installer before releasing; never published.
 #   --key=FILE   SSH private key to sign SHA256SUMS with (FILE.pub must be
 #                next to it). Default: $RYAD_SIGNING_KEY. Users check the
 #                signature against github.com/bcare-bergia.keys, so use a key
 #                listed there.
-#   --publish    after building, ask, then upload the files with gh as a DRAFT
+#   --version=X.Y.Z
+#                the version to release. HEAD is built (committed files only:
+#                tracked files must have no uncommitted changes), and tagged
+#                vX.Y.Z, an annotated local tag, only once every check passed.
+#                Run again on a HEAD already tagged vX.Y.Z, it rebuilds without
+#                tagging again.
+#   --publish    rebuild the release from the vX.Y.Z tag on HEAD, which must be
+#                on origin, ask, then upload the files with gh as a DRAFT
 #                release vX.Y.Z. Nothing is public until you publish the draft.
+#                With --version, it must match the tag.
+#   --pre-check  run every check of the release below (build, test, sign and
+#                verify included), in a temporary directory, then stop: nothing
+#                is written to dist/, tagged nor uploaded. With --publish, also
+#                run its checks; with --snapshot, check the working tree.
 #   --help       this text
-#
-# The version is not an argument: it comes from git. The current commit (HEAD)
-# must carry exactly one tag of the form vX.Y.Z.
 #
 # PREPARING A RELEASE
 #   1. Pick the version (semantic versioning): X for incompatible changes (to
@@ -29,24 +41,29 @@
 #      what users need to know, upgrade steps included. Commit.
 #   3. Try it: ./release.sh --snapshot, then install the snapshot installer on
 #      a real machine (see CHECKS below).
-#   4. Tag it, but don't push yet: git tag -a vX.Y.Z -m "ryad X.Y.Z"
-#   5. ./release.sh --key=FILE. If it fails, fix, commit, and move the tag:
-#      git tag -d vX.Y.Z, then tag again. Easy while the tag isn't pushed.
-#   6. git push origin main vX.Y.Z
-#   7. ./release.sh --key=FILE --publish. It rebuilds the same bytes and uploads
-#      them as a draft.
-#   8. Review the draft on GitHub (notes, the four files), then publish it there,
+#   4. ./release.sh --key=FILE --version=X.Y.Z. It tags HEAD vX.Y.Z only if
+#      everything passed; if it fails, nothing is tagged: fix, commit, run it
+#      again. To change something after it tagged, while the tag isn't pushed:
+#      git tag -d vX.Y.Z, fix, commit, run it again.
+#   5. git push origin main vX.Y.Z
+#   6. ./release.sh --key=FILE --publish. It rebuilds the same bytes from the
+#      tag and uploads them as a draft.
+#   7. Review the draft on GitHub (notes, the four files), then publish it there,
 #      or: gh release edit vX.Y.Z --draft=false
 #   Once published, a version is final: never move or reuse its tag. To fix
 #   it, release X.Y.(Z+1).
 #
 # CHECKS
 #   Done by this script, which stops at the first failure:
-#   - HEAD has exactly one vX.Y.Z tag; the signing key and its .pub exist
+#   - with --version: X.Y.Z is a version, higher than the last vX.Y.Z tag;
+#     tracked files have no uncommitted changes; vX.Y.Z doesn't tag another
+#     commit, and HEAD has no other vX.Y.Z tag
+#   - with --publish: HEAD has exactly one vX.Y.Z tag (the --version, if given)
+#   - the signing key and its .pub exist
 #   - ryad, bundle.sh and installer/stub.sh parse (bash -n), and pass
 #     shellcheck when it is installed
 #   - CHANGELOG.md has a non-empty "## [X.Y.Z]" section
-#   - LICENSE.md, README.md and docs/ are in the tag (they go in the installer)
+#   - LICENSE.md, README.md and docs/ are committed (they go in the installer)
 #   - two builds come out byte for byte the same (reproducible)
 #   - tests/installer-test.sh passes: install, upgrade, damaged copy, other
 #     prefix, uninstall, in a throwaway HOME (it doesn't build images)
@@ -61,7 +78,7 @@
 #     it starts, the apps launch, logins and workspace are still there
 #   - a new environment in a new profile, from scratch
 #   - the docs match what changed (README, docs/, ryad --help)
-#   - nothing private in the tag: git archive vX.Y.Z | tar -t
+#   - nothing private in the release: git archive HEAD | tar -t
 #   - with --publish: gh auth status
 #
 # OUTPUT, in dist/release/X.Y.Z/
@@ -72,8 +89,10 @@
 #   SHA256SUMS.sig      its SSH signature (ssh-keygen -Y sign, namespace "file")
 #   RELEASE_NOTES.md    the version's section of CHANGELOG.md
 #
-# The files are built from the tag (git archive), never from the working tree,
-# with dates taken from the tagged commit; uncommitted changes can't leak in.
+# The files are built from the commit (git archive), never from the working
+# tree, with dates taken from that commit; uncommitted changes can't leak in.
+# The tag doesn't change the bytes (RYAD_VERSION is set), so --publish, which
+# rebuilds from the tag, uploads exactly what --version built and tested.
 # See also: docs/foundations.md#releases.
 set -euo pipefail
 
@@ -81,30 +100,52 @@ cd "$(dirname "$(readlink -f "$0")")"
 die() { echo "error: $*" >&2; exit 1; }
 step() { echo "==> $*"; }
 
-key=${RYAD_SIGNING_KEY:-} publish=0 snapshot=0
+key=${RYAD_SIGNING_KEY:-} publish=0 snapshot=0 precheck=0 version= tag= already_tagged=0
 for a in "$@"; do
   case $a in
     --snapshot) snapshot=1 ;;
     --key=*) key=${a#*=} ;;
     --publish) publish=1 ;;
+    --version=*) version=${a#*=} version=${version#v} ;;
+    --pre-check) precheck=1 ;;
     --help|-h) sed -n '2,/^set -e/p' "$0" | sed '$d; s/^# \{0,1\}//'; exit 0 ;;
-    *) die "unknown argument: $a (see --help); the version comes from the tag on HEAD" ;;
+    *) die "unknown argument: $a (see --help)" ;;
   esac
 done
 if [ "$snapshot" = 1 ]; then
   [ "$publish" = 0 ] || die "a snapshot can't be published"
+  [ -z "$version" ] || die "a snapshot takes its version from git describe, not --version"
   version=$(git describe --tags --always --dirty 2>/dev/null || echo dev)
   version=${version#v} out=dist/release/snapshot
 else
-  # The release tag on HEAD: vX.Y.Z, exactly one.
+  # The release tags (vX.Y.Z) on HEAD.
   tags=$(git tag --points-at HEAD | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' || true)
-  case $(grep -c . <<<"$tags") in
-    1) tag=$tags ;;
-    0) last=$(git describe --tags --abbrev=0 --match 'v[0-9]*' 2>/dev/null || true)
-       die "HEAD ($(git rev-parse --short HEAD)) has no vX.Y.Z tag${last:+ (the last one is $last)}: update CHANGELOG.md, commit, then: git tag -a vX.Y.Z -m 'ryad X.Y.Z'" ;;
-    *) die "HEAD has several release tags: $(echo $tags)" ;;
-  esac
-  version=${tag#v} out=dist/release/${tag#v}
+  if [ "$publish" = 1 ]; then
+    # Publish what --version built and tagged: exactly one tag on HEAD.
+    case $(grep -c . <<<"$tags") in
+      1) tag=$tags ;;
+      0) die "HEAD ($(git rev-parse --short HEAD)) has no vX.Y.Z tag: make the release first: ./release.sh --key=FILE --version=X.Y.Z" ;;
+      *) die "HEAD has several release tags: $(echo $tags)" ;;
+    esac
+    [ -z "$version" ] || [ "v$version" = "$tag" ] || die "--version=$version, but HEAD is tagged $tag"
+    version=${tag#v} ref=$tag
+  else
+    [ -n "$version" ] || die "which version? --version=X.Y.Z (or --snapshot to try the working tree)"
+    [[ $version =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || die "--version=$version: expected X.Y.Z"
+    tag=v$version
+    git diff --quiet HEAD -- || die "tracked files have uncommitted changes: commit them first, the release is built from HEAD"
+    ref=$(git rev-parse HEAD)
+    if old=$(git rev-parse -q --verify "refs/tags/$tag^{commit}"); then
+      [ "$old" = "$ref" ] || die "$tag already tags $(git rev-parse --short "$old"); if it isn't pushed, remove it: git tag -d $tag"
+      already_tagged=1
+    fi
+    others=$(grep -vxF "$tag" <<<"$tags" || true)
+    [ -z "$others" ] || die "HEAD is already tagged $(echo $others)"
+    last=$(git tag -l 'v[0-9]*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | grep -vxF "$tag" | sort -V | tail -n 1 || true)
+    [ -z "$last" ] || [ "$(printf '%s\n' "$last" "$tag" | sort -V | tail -n 1)" = "$tag" ] \
+      || die "$tag isn't higher than the last release, $last"
+  fi
+  out=dist/release/$version
   [ -n "$key" ] || die "no signing key: --key=FILE or RYAD_SIGNING_KEY=FILE (an SSH private key)"
   [ -f "$key" ] && [ -f "$key.pub" ] || die "$key or $key.pub not found"
 fi
@@ -112,6 +153,8 @@ for c in git tar gzip base64 sha256sum ssh-keygen; do command -v "$c" >/dev/null
 
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
+# A pre-check does everything in $tmp, and leaves dist/ alone.
+[ "$precheck" = 0 ] || out=$tmp/out
 
 # --- sources -------------------------------------------------------------------------
 src=$tmp/src
@@ -121,16 +164,16 @@ if [ "$snapshot" = 1 ]; then
   git ls-files -coz --exclude-standard | tar --null -T - -cf - | tar -xf - -C "$src"
   epoch=$(date +%s)
 else
-  step "Sources: $tag ($(git rev-parse --short "$tag^{commit}"))"
-  git archive "$tag" | tar -xf - -C "$src"
-  epoch=$(git log -1 --format=%ct "$tag^{commit}")
+  step "Sources: $tag, commit $(git rev-parse --short "$ref^{commit}")"
+  git archive "$ref" | tar -xf - -C "$src"
+  epoch=$(git log -1 --format=%ct "$ref^{commit}")
 fi
 export SOURCE_DATE_EPOCH=$epoch RYAD_VERSION=$version
 
 # --- checks --------------------------------------------------------------------------
 step "Checks"
 for f in ryad bundle.sh installer/stub.sh tests/installer-test.sh LICENSE.md README.md CHANGELOG.md docs; do
-  [ -e "$src/$f" ] || die "$f is missing from the sources${tag:+ (not committed before tagging $tag?)}"
+  [ -e "$src/$f" ] || die "$f is missing from the sources${tag:+ (not committed?)}"
 done
 for f in ryad bundle.sh installer/stub.sh; do bash -n "$src/$f"; done
 if command -v shellcheck >/dev/null; then
@@ -143,7 +186,7 @@ section=$([ "$snapshot" = 1 ] && echo Unreleased || echo "$version")
 notes=$(awk -v v="$section" '
   /^## \[/ { if (show) exit; s = $2; gsub(/[][]/, "", s); show = (s == v); next }
   show' "$src/CHANGELOG.md" | sed -e '/./,$!d' | sed -e ':a' -e '/^\n*$/{$d;N;ba' -e '}')
-[ -n "$notes" ] || [ "$snapshot" = 1 ] || die "CHANGELOG.md has no '## [$version]' section, or it's empty (in $tag)"
+[ -n "$notes" ] || [ "$snapshot" = 1 ] || die "CHANGELOG.md has no '## [$version]' section, or it's empty (in the commit)"
 
 # --- build (twice, to check it's reproducible) ----------------------------------------
 # build DIR: the bundle, installer and notes, into DIR.
@@ -193,14 +236,37 @@ if [ "$snapshot" = 0 ]; then
     < "$out/SHA256SUMS" >/dev/null || die "the signature doesn't verify"
 fi
 
+# --- publish -----------------------------------------------------------------------------
+publish_checks() {
+  command -v gh >/dev/null || die "gh is needed to publish"
+  git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null \
+    || die "$tag isn't on origin yet: git push origin $tag"
+}
+if [ "$precheck" = 1 ]; then
+  [ "$publish" = 0 ] || { step "Publish checks"; publish_checks; }
+  step "Pre-check passed for ryad $version: nothing written to dist/, tagged nor uploaded"
+  exit 0
+fi
+
+# --- tag ---------------------------------------------------------------------------------
+# Only now that everything passed.
+if [ "$snapshot" = 0 ] && [ "$publish" = 0 ]; then
+  if [ "$already_tagged" = 1 ]; then
+    step "Tag: HEAD is already $tag"
+  else
+    step "Tag $tag"
+    git tag -a "$tag" -m "ryad $version" "$ref"
+  fi
+fi
+
 step "Done: $out"
 ls -l "$out" | tail -n +2 | sed 's/^/    /'
+if [ "$snapshot" = 0 ] && [ "$publish" = 0 ]; then
+  echo "    Next: git push origin main $tag, then: ./release.sh --key=FILE --publish"
+fi
 
-# --- publish -----------------------------------------------------------------------------
 [ "$publish" = 1 ] || exit 0
-command -v gh >/dev/null || die "gh is needed to publish"
-git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null \
-  || die "$tag isn't on origin yet: git push origin $tag"
+publish_checks
 read -r -p "Upload ryad $version to GitHub as a draft release? [y/N] " r
 [[ $r == [yY]* ]] || { echo "not uploaded; the files are in $out"; exit 0; }
 step "Draft release $tag"
