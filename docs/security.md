@@ -1,6 +1,6 @@
 # Security model
 
-ryad's goal is narrow: keep what Claude (and anything it runs) can **see and change** limited to the project you are working on. It is not a network firewall, and it doesn't protect you from a malicious image.
+ryad's goal is narrow: keep what an AI agent (and anything it runs) can **see and change** limited to the project you are working on. It is not a network firewall, and it doesn't protect you from a malicious image.
 
 - [At a glance](#at-a-glance)
 - [Filesystem](#filesystem)
@@ -9,7 +9,7 @@ ryad's goal is narrow: keep what Claude (and anything it runs) can **see and cha
 - [Network](#network)
 - [Display](#display)
 - [Electron apps](#electron-apps)
-- [Not available: Cowork](#not-available-cowork)
+- [Not available: Claude Desktop's Cowork](#not-available-claude-desktops-cowork)
 
 ## At a glance
 
@@ -30,15 +30,15 @@ An environment sees the workspace, the profile home and the container's own file
 
 - The launcher refuses to mount `/` or `$HOME` as the workspace unless you pass `--allow-unsafe-workspace`.
 - Files created in the workspace belong to your host user.
-- Everything in the workspace is readable and writable by Claude. Keep secrets you don't want it to see outside the workspace.
+- Everything in the workspace is readable and writable by the agents you run there. Keep secrets you don't want them to see outside the workspace.
 
 ## Credentials
 
 Credentials are stored **unencrypted** in the profile folder, which is mode 0700 on the host:
 
-- Claude Code's `~/.claude/.credentials.json`
-- the keyring holding Claude Desktop's sign-in, `~/.local/share/keyrings/login.keyring`. This keyring has no password, so it never prompts.
-- anything you put in `profile.env`, such as an API key
+- each tool's own credential files, such as `~/.pi/agent/` or `~/.claude/.credentials.json`
+- the keyring where desktop apps keep their secrets, `~/.local/share/keyrings/login.keyring`. This keyring has no password, so it never prompts.
+- anything you put in `profile.env`, such as API keys
 
 Treat `~/.config/ryad/profiles/` like `~/.ssh`.
 
@@ -48,13 +48,13 @@ Profiles also separate accounts from each other: an environment on profile `pers
 
 - Each environment is a rootless Podman container with its own PID, IPC and user namespaces.
 - Container root maps to your own unprivileged user on the host.
-- The user inside has passwordless `sudo`, so Claude can install tools. Those changes stay inside that environment's container and disappear when it is recreated.
+- The user inside has passwordless `sudo`, so agents can install tools. Those changes stay inside that environment's container and disappear when it is recreated.
 - SELinux labelling is disabled for the container (`--security-opt label=disable`), so that the workspace and display sockets can be shared without relabelling them.
 - By default, `/dev/dri` is passed in for GPU rendering. `--no-gpu` leaves it out.
 
 ## Network
 
-**Network access is not restricted.** Claude, the apps and anything they run have normal internet access. They can also reach services on your LAN, and services on the host through the container network gateway.
+**Network access is not restricted.** The apps, the agents and anything they run have normal internet access. They can also reach services on your LAN, and services on the host through the container network gateway.
 
 If that matters for a project, add your own restrictions at the Podman or firewall level, or route traffic through a proxy with `HTTPS_PROXY` in [`profile.env`](profiles.md#environment-variables-profileenv).
 
@@ -69,12 +69,12 @@ X11 clients can observe each other: an X11 app in the sandbox can read the keyst
 
 ## Electron apps
 
-Claude Desktop, VSCodium and RStudio are started through small wrappers in the image, in `/usr/local/bin`. The wrappers:
+The Electron desktop apps (Antigravity, Claude Desktop, VSCodium, RStudio) are started through small wrappers in the image, in `/usr/local/bin`. The wrappers:
 
-- store secrets in the profile keyring (`--password-store=gnome-libsecret`). There's no desktop environment in the container, so without this Claude Desktop would fall back to an unprotected store and not keep you signed in.
+- store secrets in the profile keyring (`--password-store=gnome-libsecret`). There's no desktop environment in the container, so without this the apps would fall back to an unprotected store, and some (Claude Desktop, for one) would not keep you signed in.
 - allow one instance per profile (see [Profiles](profiles.md#sharing-a-profile-between-environments)).
 - keep Chromium's own sandbox on. It works in rootless Podman. If an app crashes at startup on your system, run it with `RYAD_ELECTRON_NO_SANDBOX=1` to add `--no-sandbox`.
 
-## Not available: Cowork
+## Not available: Claude Desktop's Cowork
 
 Cowork needs KVM (`/dev/kvm`, `/dev/vhost-vsock`), which is deliberately not passed in. Chat and Code in Claude Desktop work.

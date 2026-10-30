@@ -30,7 +30,7 @@ Every command, option, setting and file, in one place. For explanations, follow 
 
 | Command | |
 |---|---|
-| `ryad profiles [list]` | profiles, their environments and Claude Code login |
+| `ryad profiles [list]` | profiles, their environments, and whether Claude Code is set up |
 | `ryad profiles create NAME` | create a profile with commented templates |
 | `ryad profiles edit NAME [conf\|env]` | edit `profile.conf` (default) or `profile.env` |
 | `ryad profiles path NAME` | print the profile's folder |
@@ -63,7 +63,7 @@ These are fixed afterwards; use `recreate` to change them.
 
 | Option | Default | |
 |---|---|---|
-| `-p`, `--profile=NAME` | `default` | profile: Claude logins and settings |
+| `-p`, `--profile=NAME` | `default` | profile: logins, keys and settings |
 | `-w`, `--workspace=DIR` | current directory | folder mounted read-write |
 | `--image=IMAGE` | `ryad:latest` | image |
 | `--display=MODE` | `auto` | `auto`, `wayland` or `x11` |
@@ -93,7 +93,7 @@ These are fixed afterwards; use `recreate` to change them.
 | `--code-version=V` | Claude Code: `latest`, `stable` or `X.Y.Z` |
 | `--desktop-version=V` | Claude Desktop: `latest` or `X.Y.Z` |
 | `--rstudio-version=V` | RStudio: `latest` or `X.Y.Z-N` |
-| `--apps="a b c"` | third-party apps from `apps/` (Claude Code and Desktop are always installed) |
+| `--apps="a b c"` | apps from `apps/` (Claude Code and Claude Desktop are built in) |
 | `--packages="p1 p2"` | extra apt packages, added to `EXTRA_PACKAGES` |
 | `--base-image=IMAGE` | Debian/Ubuntu base image, e.g. `debian:13` |
 | `--image-name=NAME` | resulting image name (default `ryad`) |
@@ -113,11 +113,13 @@ Overrides the built-in [build.conf](../build.conf). See [Customization](customiz
 |---|---|---|
 | `BASE_IMAGE` | `ubuntu:26.04` | Ubuntu ≥ 22.04 or Debian ≥ 12 |
 | `IMAGE_NAME` | `ryad` | tagged `:latest` and `:cc-<code>_cd-<desktop>` |
-| `APPS` | `firefox vscodium rstudio` | apps from `apps/<name>.sh` |
+| `APPS` | `firefox vscodium rstudio antigravity pi` | apps from `apps/<name>.sh` |
 | `EXTRA_PACKAGES` | | apt packages, on top of `packages/*.list` |
 | `CLAUDE_CODE_VERSION` | `latest` | `latest`, `stable` or `X.Y.Z` |
 | `CLAUDE_DESKTOP_VERSION` | `latest` | `latest` or `X.Y.Z` |
 | `RSTUDIO_VERSION` | `latest` | `latest` or e.g. `2026.10.0-233` |
+| `ANTIGRAVITY_VERSION` | `latest` | `latest` or `X.Y.Z` |
+| `PI_VERSION` | `latest` | `latest` or `X.Y.Z`; `latest` is only re-resolved with `--refresh` |
 | `<APP>_VERSION` | | passed to `apps/<app>.sh`, e.g. `VSCODIUM_VERSION` |
 
 ### `profiles/<name>/profile.conf`

@@ -1,6 +1,6 @@
 # Profiles
 
-A **profile** is the private home directory of your environments. It holds your Claude logins, app settings, shell history and git identity. Use one profile per account or context, for example `work` and `personal`.
+A **profile** is the private home directory of your environments. It holds your logins and API keys, app settings, agent history, shell history and git identity. Use one profile per account or context, for example `work` and `personal`.
 
 - [What's in a profile](#whats-in-a-profile)
 - [Creating and managing profiles](#creating-and-managing-profiles)
@@ -17,8 +17,8 @@ Each profile is a folder under `~/.config/ryad/profiles/<name>/`, with mode 0700
 
 ```
 ~/.config/ryad/profiles/work/
-├── home/          # mounted as /home/<user>: ~/.claude, ~/.claude.json, ~/.config/Claude,
-│                  # the keyring, VSCodium/RStudio/Emacs settings, .gitconfig, history
+├── home/          # mounted as /home/<user>: every app's settings and logins (~/.pi,
+│                  # ~/.claude, ~/.config/…), the keyring, .gitconfig, history
 ├── profile.env    # optional: environment variables for its environments
 └── profile.conf   # optional: creation defaults and prompt colors for its environments
 ```
@@ -34,7 +34,7 @@ A profile is created on first use, or ahead of time with `ryad profiles create`,
 
 | Command | |
 |---|---|
-| `ryad profiles` | each profile with its environments and whether Claude Code is logged in |
+| `ryad profiles` | each profile with its environments (and whether Claude Code is set up) |
 | `ryad profiles create NAME` | create it with the commented templates |
 | `ryad profiles edit NAME [conf\|env]` | open `profile.conf` (default) or `profile.env` in `$VISUAL`/`$EDITOR`. Creates the profile if needed |
 | `ryad profiles path NAME` | print its folder, e.g. `cd "$(ryad profiles path work)"` |
@@ -44,34 +44,40 @@ A profile is created on first use, or ahead of time with `ryad profiles create`,
 
 Log in once per profile, from a shell in any environment that uses it:
 
-- **Claude Code:** `claude`, then `/login`. The login page opens in the sandbox's Firefox. The credentials go to `home/.claude/.credentials.json`.
+- **Pi:** `pi`, then `/login` for a subscription, or an API key in [`profile.env`](#environment-variables-profileenv). Its settings and logins go to `home/.pi/`.
+- **Google Antigravity:** `antigravity`, then sign in with your Google account.
+- **Claude Code:** `claude`, then `/login`. The credentials go to `home/.claude/.credentials.json`.
 - **Claude Desktop:** `claude-desktop`, then sign in. The sign-in goes to the profile's keyring, `home/.local/share/keyrings/`.
+- **Anything else** you add to the image keeps its logins wherever it normally does in your home directory, which is the profile.
 
-`ryad profiles` shows, for each profile, whether Claude Code is logged in, or configured through `profile.env`.
+Sign-in pages open in the sandbox's Firefox.
 
 ## Sharing a profile between environments
 
-Environments on the same profile share its home **live**: logins, settings, Claude Code history and memory.
+Environments on the same profile share its home **live**: logins, settings, agent sessions and memory.
 
-- **Claude Code** works in all of them at once.
-- **Claude Desktop, VSCodium and RStudio** keep their data in a settings folder that only one running copy may use. Each of them can run in **only one environment per profile at a time**. Starting a second copy elsewhere is refused:
+- **Terminal tools** such as Pi and Claude Code work in all of them at once.
+- **Desktop apps** (Antigravity, Claude Desktop, VSCodium, RStudio) keep their data in a settings folder that only one running copy may use. Each of them can run in **only one environment per profile at a time**. Starting a second copy elsewhere is refused:
 
   ```
-  claude-desktop is already running in environment 'acme', which uses the same profile.
+  antigravity is already running in environment 'acme', which uses the same profile.
   ```
 
   Close it there, or give the other environment its own profile.
 
 ## Environment variables: `profile.env`
 
-`KEY=value` lines, passed to every shell and app in the profile's environments. Use it for an API key or a cloud provider instead of a subscription, or for a proxy:
+`KEY=value` lines, passed to every shell and app in the profile's environments. Use it for model provider API keys, cloud-provider settings or a proxy:
 
 ```bash
+OPENAI_API_KEY=sk-...
+GEMINI_API_KEY=...
 ANTHROPIC_API_KEY=sk-ant-...
-# CLAUDE_CODE_USE_BEDROCK=1
 # AWS_REGION=eu-west-1
 # HTTPS_PROXY=http://proxy:3128
 ```
+
+Each tool reads the variables it knows about; check its own documentation for the names. A model server running on your host or LAN (Ollama, llama.cpp, vLLM…) is reachable from inside too, since the network isn't restricted (see the [Security model](security.md#network)).
 
 Edit it with `ryad profiles edit work env`. It is read each time you enter an environment, so new shells and apps pick up changes right away.
 

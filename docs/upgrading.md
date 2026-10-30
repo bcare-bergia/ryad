@@ -1,6 +1,6 @@
 # Upgrading
 
-Claude Desktop doesn't update itself on Linux, and Claude Code's auto-updater is disabled in the image. Upgrades go through the image instead: rebuild it, then move your environments onto it.
+Apps don't update themselves inside the sandbox: they are installed system-wide, out of reach of their own updaters, and self-updates are turned off where possible. Upgrades go through the image instead: rebuild it, then move your environments onto it. That keeps every environment on a known, identical set of versions.
 
 - [The upgrade cycle](#the-upgrade-cycle)
 - [Security updates](#security-updates)
@@ -31,6 +31,8 @@ To stay on a given version instead, [pin it](customization.md#pin-versions).
 ryad build --refresh
 ryad recreate --outdated
 ```
+
+It also picks up new releases of the apps whose `latest` version isn't looked up at each build (Pi, VSCodium, Firefox).
 
 `--no-cache` rebuilds every layer from scratch.
 

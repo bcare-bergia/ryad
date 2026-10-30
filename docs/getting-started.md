@@ -1,12 +1,12 @@
 # Getting started
 
-This guide takes you from a fresh checkout to Claude running in a sandbox.
+This guide takes you from a fresh checkout to an AI agent working in a sandbox.
 
 - [Requirements](#requirements)
 - [Install](#install)
 - [Build the image](#build-the-image)
 - [Create your first environment](#create-your-first-environment)
-- [Log in to Claude](#log-in-to-claude)
+- [Sign in to your tools](#sign-in-to-your-tools)
 - [Shell completion](#shell-completion)
 - [Next steps](#next-steps)
 
@@ -14,7 +14,7 @@ This guide takes you from a fresh checkout to Claude running in a sandbox.
 
 - Linux with rootless **Podman** (tested with Podman 5.7 on Ubuntu 26.04)
 - `curl` and `jq` on the host (used by `ryad build`)
-- A Wayland or X11 session for the GUI apps. Without one, the terminal apps (Claude Code included) still work.
+- A Wayland or X11 session for the GUI apps. Without one, the terminal apps (`pi`, `claude`, your shell tools) still work.
 - An x86-64 or ARM64 machine
 
 ## Install
@@ -40,7 +40,7 @@ After changing anything in the repository, run `./bundle.sh` again and reinstall
 ryad build
 ```
 
-This produces the image `ryad:latest`, also tagged `ryad:cc-<code-version>_cd-<desktop-version>`. It picks the latest releases of Claude Code and Claude Desktop. The first build downloads a few GB and takes a while; later builds only redo the layers that changed.
+This produces the image `ryad:latest`, also tagged with the versions it contains. It picks the latest release of each app. The first build downloads a few GB and takes a while; later builds only redo the layers that changed.
 
 From a checkout, `./build.sh` does the same with the repository's files. It takes the same options (`./build.sh --help`).
 
@@ -60,12 +60,16 @@ This creates an environment named after the folder ("acme"), with the profile `d
 
 | Command | App |
 |---|---|
-| `claude` | Claude Code CLI |
+| `pi` | Pi, a terminal coding agent that works with most model providers |
+| `antigravity` | Google Antigravity |
+| `claude` | Claude Code, in the terminal |
 | `claude-desktop` | Claude Desktop |
 | `codium` | VSCodium (`codium .` opens the workspace) |
 | `rstudio` | RStudio |
 | `emacs` | Emacs |
 | `firefox` | Firefox |
+
+Use any of them, or none: the environment is a normal Linux shell, and you can [add other tools](customization.md) to the image.
 
 To use another profile, say one for your work account, pass it the first time:
 
@@ -75,14 +79,16 @@ ryad --profile=work
 
 The environment keeps that profile from then on. See [Usage](usage.md) for everything else you can do with environments.
 
-## Log in to Claude
+## Sign in to your tools
 
-You log in **once per profile**. Every environment using that profile shares the login.
+You sign in **once per profile**. Every environment using that profile shares the login. Sign-in pages open in the sandbox's Firefox.
 
-- **Claude Code:** run `claude`, then `/login`. The login page opens in the sandbox's Firefox.
+- **Pi:** run `pi`, then `/login` to use a subscription, or give it an API key (below).
+- **Google Antigravity:** run `antigravity`, then sign in with your Google account.
+- **Claude Code:** run `claude`, then `/login`.
 - **Claude Desktop:** run `claude-desktop`, then sign in.
 
-To use an API key or a cloud provider (Bedrock, Vertex) instead of a subscription, put it in the profile's `profile.env`. See [Profiles](profiles.md#environment-variables-profileenv).
+API keys (`OPENAI_API_KEY`, `GEMINI_API_KEY`, `ANTHROPIC_API_KEY`…) and cloud-provider settings go in the profile's `profile.env`, where every tool in its environments sees them. See [Profiles](profiles.md#environment-variables-profileenv).
 
 ## Shell completion
 

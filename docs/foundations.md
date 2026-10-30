@@ -52,7 +52,7 @@ Entering an environment is `podman start` (if needed), then `podman exec` of a l
 
 ## The image
 
-The [Dockerfile](../Dockerfile) builds the image in layers ordered from least to most frequently changing, so that upgrading Claude only rebuilds the last two:
+The [Dockerfile](../Dockerfile) builds the image in layers ordered from least to most frequently changing. Claude Desktop and Claude Code release almost daily, so they get the last two layers of their own, and their upgrades rebuild only those:
 
 | # | Layer | Comes from | Rebuilt when |
 |---|---|---|---|
@@ -62,7 +62,7 @@ The [Dockerfile](../Dockerfile) builds the image in layers ordered from least to
 | 4 | Claude Desktop | `apps/claude-desktop.sh` | a new Desktop version |
 | 5 | Claude Code | `apps/claude-code.sh` | a new Code version |
 
-Before building, `ryad build` resolves `latest` and `stable` into concrete version numbers and passes them as build arguments. A rebuild therefore invalidates exactly the layers whose version changed. The resolved versions also give the image its tag, `cc-<code>_cd-<desktop>`, and are recorded as image labels and in `/etc/ryad-release`, which `ryad versions` reads.
+Before building, `ryad build` resolves `latest` and `stable` into concrete version numbers and passes them as build arguments. A rebuild therefore invalidates exactly the layers whose version changed. The resolved versions of Claude Code and Claude Desktop also give the image its tag, `cc-<code>_cd-<desktop>`; all resolved versions are recorded as image labels and in `/etc/ryad-release`, which `ryad versions` reads.
 
 Claude Code is installed as the native binary in `/opt/claude-code`, with the same checksum verification as the official installer, but system-wide rather than per user, since the home directory is the profile. Its auto-updater is disabled (`DISABLE_AUTOUPDATER=1`).
 
@@ -73,7 +73,7 @@ The container's main process is [entrypoint.sh](../entrypoint.sh). At each start
 1. renames the image's user (`claude`) to the name chosen at creation, the first time only ([sbin/ryad-setuser](../sbin/ryad-setuser));
 2. seeds an empty profile home from `/etc/skel`;
 3. starts a private session D-Bus;
-4. starts `gnome-keyring` with an unencrypted, never-locked "login" keyring in the profile, so Claude Desktop can keep its sign-in;
+4. starts `gnome-keyring` with an unencrypted, never-locked "login" keyring in the profile, so desktop apps can keep their sign-ins;
 5. then idles until the environment is stopped.
 
 Shells and apps are not children of the entrypoint: each `ryad NAME` adds a process with `podman exec`. That's why closing a terminal doesn't stop the environment.
@@ -91,11 +91,11 @@ Container mounts are fixed at creation, but the Wayland socket name and the Xaut
 
 ## Electron app wrappers
 
-Claude Desktop, VSCodium and RStudio are Electron apps. Their installers call `electron_wrapper` from [apps/lib.sh](../apps/lib.sh), which writes a wrapper in `/usr/local/bin`, ahead of the real binary in `PATH`. Desktop files and deep links (`claude://…`) go through it too. The wrapper:
+Antigravity, Claude Desktop, VSCodium and RStudio are Electron apps. Their installers call `electron_wrapper` from [apps/lib.sh](../apps/lib.sh), which writes a wrapper in `/usr/local/bin`, ahead of the real binary in `PATH`. Desktop files and deep links go through it too. The wrapper:
 
 - adds `--password-store=gnome-libsecret`, so secrets go to the profile keyring;
 - adds `--no-sandbox` when `RYAD_ELECTRON_NO_SANDBOX=1`;
-- takes a lock, `~/.cache/ryad/<app>.lock`, in the profile home. Environments sharing a profile see the same file, so a second instance in another environment is refused with the name of the one holding it. A second launch in the *same* environment is let through, so the app's own single-instance handling can take it over (that is how sign-in links reach Claude Desktop);
+- takes a lock, `~/.cache/ryad/<app>.lock`, in the profile home. Environments sharing a profile see the same file, so a second instance in another environment is refused with the name of the one holding it. A second launch in the *same* environment is let through, so the app's own single-instance handling can take it over (that is how sign-in links such as `antigravity://…` and `claude://…` reach the running app);
 - stays in the foreground until the app's main process exits, even if its launcher returns early (as `codium` does), so the lock is held for as long as the app runs.
 
 ## Bundling and versions

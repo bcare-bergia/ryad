@@ -28,7 +28,7 @@ This one command does everything:
 $ cd ~/projects/acme/src
 $ ryad
 ryad 'acme' · profile work · workspace /home/you/projects/acme
-  claude  claude-desktop  codium  rstudio  emacs  firefox
+  pi  antigravity  claude  claude-desktop  codium  rstudio  emacs  firefox
 you@acme:~/projects/acme/src$
 ```
 
@@ -37,7 +37,7 @@ you@acme:~/projects/acme/src$
 **One command instead of a shell.** Put it after `--`:
 
 ```bash
-ryad acme -- claude --resume
+ryad acme -- pi -p "explain the build system"
 ryad acme -- git status
 ```
 
@@ -45,21 +45,21 @@ ryad acme -- git status
 
 ## Starting apps
 
-From any shell in the environment, run the apps like normal programs: `claude`, `claude-desktop`, `codium`, `rstudio`, `emacs`, `firefox`.
+From any shell in the environment, run the apps like normal programs: `pi`, `antigravity`, `claude`, `claude-desktop`, `codium`, `rstudio`, `emacs`, `firefox`, or anything else installed in the image.
 
-**GUI apps stay in the foreground** of the terminal you start them from, until their window is closed. This includes `codium`, which normally returns straight away: here it stays in the foreground so that the [one-instance-per-profile lock](profiles.md#sharing-a-profile-between-environments) is held while it runs. To get the terminal back, use `claude-desktop &`.
+**GUI apps stay in the foreground** of the terminal you start them from, until their window is closed. This includes `codium`, which normally returns straight away: here it stays in the foreground so that the [one-instance-per-profile lock](profiles.md#sharing-a-profile-between-environments) is held while it runs. To get the terminal back, use `antigravity &`.
 
 **Starting an app from the host.** Use `--detach` (`-d`) to start an app in the background and get the terminal back:
 
 ```bash
-ryad acme -d -- claude-desktop
+ryad acme -d -- antigravity
 ryad -d -- codium .            # environment of the current folder
 ```
 
-The app keeps running after you close the terminal. Its output goes to `~/.cache/ryad/logs/<command>.log` in the profile, and the launcher prints that path. If the command fails right away, for example because Claude Desktop is already open in another environment on the same profile, the launcher shows its output and exits with an error.
+The app keeps running after you close the terminal. Its output goes to `~/.cache/ryad/logs/<command>.log` in the profile, and the launcher prints that path. If the command fails right away, for example because the app is already open in another environment on the same profile, the launcher shows its output and exits with an error.
 
 > [!TIP]
-> `ryad -d -- claude-desktop` makes a good desktop shortcut or keyboard binding.
+> `ryad acme -d -- antigravity` makes a good desktop shortcut or keyboard binding.
 
 ## Creating environments
 
@@ -82,7 +82,7 @@ Option values go after `=` or a space: `--profile=work`, `--profile work`, or `-
 
 **Nested folders.** Without `NAME`, a folder inside an environment's workspace belongs to that environment, and the deepest one wins. With `--profile=X`, only environments on profile X count. For example, `ryad --profile=work` in `acme/src`, where "acme" is on another profile, creates a new environment "src". To create a nested environment on purpose, name it: `ryad src --workspace=.`.
 
-**Several at once.** You can run several environments at the same time, including several on the same profile, for example two projects on your "work" subscription.
+**Several at once.** You can run several environments at the same time, including several on the same profile, for example two projects on your "work" account.
 
 **User and home.** Inside, you are UID 1000, mapped to your own user on the host, and named after your host user unless you pick another name with `--user`. The profile's `home/` is mounted as `/home/<user>`. If the workspace is under your host home, e.g. `/home/you/projects/acme`, the prompt shows it as `~/projects/acme` as on the host. Podman creates the empty mount-point folders (`projects/acme`) inside the profile's `home/`. Environments created before `--user` existed keep the name `claude` when recreated.
 

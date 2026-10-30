@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ryad: persistent, named sandbox environments (rootless Podman
-# containers) for Claude Code, Claude Desktop and editors. Each environment
+# containers) for AI agents, LLM tools and editors. Each environment
 # sees one workspace folder and one profile; you enter it with a terminal and
 # start the apps from there.
 set -euo pipefail
@@ -48,14 +48,14 @@ Usage:
       Enter environment NAME: create it if needed, start it if stopped, and open
       a shell in it (or run CMD). Run it again in another terminal for another
       shell in the same environment. Start apps from the shell:
-      claude, claude-desktop, codium, rstudio, emacs, firefox.
+      pi, antigravity, claude, claude-desktop, codium, rstudio, emacs, firefox.
       Without NAME: the environment of the current folder or of the closest
       parent folder (on --profile, if given), else a new one named after the
       folder. A NAME that doesn't exist is only created after you confirm (or
       with --workspace or --yes). The shell opens in the current folder when it
       is inside the workspace.
   $PROG [NAME] -d -- CMD [ARGS...]
-      Start CMD in the background (e.g. claude-desktop) and return. Its output
+      Start CMD in the background (e.g. antigravity) and return. Its output
       goes to ~/$LOGDIR/ in the profile.
 
   $PROG list [-q]                      list environments (-q: names only)
@@ -83,7 +83,7 @@ Aliases: ls (list), remove and delete (rm), enter, start and shell (enter NAME).
 
 Options when creating an environment (fixed afterwards; use 'recreate' to change).
 Values go after = or a space: --profile=work, --profile work, -p work.
-  -p, --profile=NAME     profile: Claude logins and settings (default: default)
+  -p, --profile=NAME     profile: logins, keys and settings (default: default)
   -w, --workspace=DIR    folder mounted read-write (default: current directory)
   --image=IMAGE          image (default: $DEFAULT_IMAGE)
   --display=MODE         auto | wayland | x11 (default: auto)
@@ -547,6 +547,7 @@ build_main() {
   done
   : "${BASE_IMAGE:=ubuntu:26.04}" "${IMAGE_NAME:=ryad}" "${APPS:=}" "${EXTRA_PACKAGES:=}"
   : "${CLAUDE_CODE_VERSION:=latest}" "${CLAUDE_DESKTOP_VERSION:=latest}" "${RSTUDIO_VERSION:=latest}"
+  : "${ANTIGRAVITY_VERSION:=latest}"
   [ -z "$base" ] || BASE_IMAGE=$base
   [ -z "$name" ] || IMAGE_NAME=$name
   [ "$apps_set" = 0 ] || APPS=$apps
@@ -595,10 +596,14 @@ build_main() {
       | jq -r --arg k "$key" '.rstudio.open_source.stable.desktop.installer as $i | ($i[$k] // $i.jammy).url')
     RSTUDIO_VERSION=$(sed -E 's|.*/rstudio-([0-9.]+-[0-9]+)-[a-z0-9_]+\.deb$|\1|' <<<"$url")
   fi
+  if has_app antigravity && [ "$ANTIGRAVITY_VERSION" = latest ]; then
+    ANTIGRAVITY_VERSION=$(curl -fsSL https://antigravity-hub-auto-updater-974169037036.us-central1.run.app/releases \
+      | jq -r '.[0].version')
+  fi
 
   # Per-app versions: every *_VERSION set in the settings files (except Claude's).
   local app_versions=()
-  for var in $(cat "${confs[@]}" | grep -oE '^[A-Z0-9_]+_VERSION=' | tr -d = | sort -u) RSTUDIO_VERSION; do
+  for var in $(cat "${confs[@]}" | grep -oE '^[A-Z0-9_]+_VERSION=' | tr -d = | sort -u) RSTUDIO_VERSION ANTIGRAVITY_VERSION; do
     case $var in CLAUDE_*) continue ;; esac
     [[ " ${app_versions[*]} " == *" $var="* ]] && continue
     app_versions+=("$var=${!var}")
@@ -606,6 +611,7 @@ build_main() {
 
   printf '==> Versions\n    Claude Code     %s\n    Claude Desktop  %s\n' "$cc_v" "$cd_v"
   has_app rstudio && printf '    RStudio         %s\n' "$RSTUDIO_VERSION"
+  has_app antigravity && printf '    Antigravity     %s\n' "$ANTIGRAVITY_VERSION"
 
   if [ "$check" = 1 ]; then
     if podman image exists "$IMAGE_NAME:latest"; then

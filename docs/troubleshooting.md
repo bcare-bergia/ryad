@@ -3,7 +3,7 @@
 - [A GUI app doesn't appear](#a-gui-app-doesnt-appear)
 - ["could not start" after logging out and back in](#could-not-start-after-logging-out-and-back-in)
 - ["… is already running in environment 'X'"](#-is-already-running-in-environment-x)
-- [Claude Desktop asks you to sign in every time](#claude-desktop-asks-you-to-sign-in-every-time)
+- [A desktop app asks you to sign in every time](#a-desktop-app-asks-you-to-sign-in-every-time)
 - ["image not found"](#image-not-found)
 - ["this ryad has no embedded build files"](#this-ryad-has-no-embedded-build-files)
 - [A tool I installed is gone](#a-tool-i-installed-is-gone)
@@ -14,7 +14,7 @@
 1. Read its output in the terminal you started it from. For an app started with `-d`, the launcher printed the path of its log.
 2. Check for a display warning when you entered the environment. If it was created without a display (e.g. over SSH), or for Wayland and you are now in an X11-only session, run the `recreate` command it suggests.
 3. Try X11 or no GPU: `ryad recreate NAME --display=x11`, or `ryad recreate NAME --no-gpu` if the window is black.
-4. If it crashes mentioning the sandbox, start it with `RYAD_ELECTRON_NO_SANDBOX=1`, e.g. `RYAD_ELECTRON_NO_SANDBOX=1 ryad acme -- claude-desktop`.
+4. If it crashes mentioning the sandbox, start it with `RYAD_ELECTRON_NO_SANDBOX=1`, e.g. `RYAD_ELECTRON_NO_SANDBOX=1 ryad acme -- antigravity`.
 
 ## "could not start" after logging out and back in
 
@@ -22,15 +22,15 @@ The launcher refreshes its display links in `$XDG_RUNTIME_DIR/ryad/` before ever
 
 ## "… is already running in environment 'X'"
 
-Another environment on the same profile has that app open. Claude Desktop, VSCodium and RStudio can run in only one environment per profile at a time. Close it there, or give this environment its own profile. See [Profiles](profiles.md#sharing-a-profile-between-environments).
+Another environment on the same profile has that app open. Desktop apps (Antigravity, Claude Desktop, VSCodium, RStudio) can run in only one environment per profile at a time. Close it there, or give this environment its own profile. See [Profiles](profiles.md#sharing-a-profile-between-environments).
 
-## Claude Desktop asks you to sign in every time
+## A desktop app asks you to sign in every time
 
 Its secret storage isn't reaching the keyring. Inside the environment:
 
-- Look for `safeStorage … backend=basic_text` in `~/.config/Claude/logs/main.log`.
 - Check that `secret-tool search --all service x` runs without error.
-- Make sure you start it as `claude-desktop`, i.e. through the wrapper in `/usr/local/bin`.
+- Make sure you start the app by its usual command (`antigravity`, `claude-desktop`, `codium`…), i.e. through the wrapper in `/usr/local/bin`.
+- For Claude Desktop, look for `safeStorage … backend=basic_text` in `~/.config/Claude/logs/main.log`.
 
 ## "image not found"
 

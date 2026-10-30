@@ -52,7 +52,7 @@ For a one-off build: `ryad build --packages="htop postgresql-client"`. You can a
 
 ## Add a third-party app
 
-For an app that isn't a plain distro package (it needs its own apt repository, a downloaded `.deb`, a tarball…), write an installer script:
+This is how you bring another agent or LLM tool into the image: a CLI from npm or pip, a desktop app, a local model runner. For anything that isn't a plain distro package (it needs its own apt repository, a downloaded `.deb`, a tarball…), write an installer script:
 
 1. Write `~/.config/ryad/apps/<name>.sh`. It runs as root during the image build. See [apps/README](../apps/README) for the contract and an example. Apps in this folder are installed without listing them in `APPS`.
 2. Optionally pin its version with `<NAME>_VERSION=…` in `~/.config/ryad/build.conf`, e.g. `FOO_VERSION=1.2.3`.
@@ -71,20 +71,20 @@ apt-get install -y --no-install-recommends "foo$([ "$v" = latest ] || echo "=$v"
 apt_clean
 ```
 
-For an Electron app, `apps/lib.sh` provides `electron_wrapper`, which adds keyring storage and the one-instance-per-profile lock. See how [apps/vscodium.sh](../apps/vscodium.sh) uses it, and [Foundations](foundations.md#electron-app-wrappers) for what it does.
+For a tool distributed on npm, see [apps/pi.sh](../apps/pi.sh): it installs the package system-wide in `/opt`, since the home directory is replaced by the profile at runtime. For an Electron app, `apps/lib.sh` provides `electron_wrapper`, which adds keyring storage and the one-instance-per-profile lock. See how [apps/vscodium.sh](../apps/vscodium.sh) uses it, and [Foundations](foundations.md#electron-app-wrappers) for what it does.
 
 ## Remove an app
 
 Set `APPS` in `~/.config/ryad/build.conf` without it. The built-in list is:
 
 ```bash
-APPS="firefox vscodium rstudio"
+APPS="firefox vscodium rstudio antigravity pi"
 ```
 
-Claude Code and Claude Desktop are always installed. Emacs comes from [packages/30-editors.list](../packages/30-editors.list); to drop it, replace that list with an empty file of the same name in `~/.config/ryad/packages/`.
+Claude Code and Claude Desktop are built into the image and can't be left out this way. Emacs comes from [packages/30-editors.list](../packages/30-editors.list); to drop it, replace that list with an empty file of the same name in `~/.config/ryad/packages/`.
 
 > [!NOTE]
-> Without Firefox, `claude /login` prints a URL instead of opening a browser, and Claude Desktop's sign-in may not work.
+> Without Firefox, sign-in pages (`pi` and `claude` `/login`, Antigravity, Claude Desktop) can't open in a browser. Terminal tools print a URL instead; desktop apps may not be able to sign in at all.
 
 ## Pin versions
 
@@ -94,6 +94,8 @@ By default, `ryad build` takes the latest releases. To pin, set the versions in 
 CLAUDE_CODE_VERSION=stable        # latest | stable | X.Y.Z
 CLAUDE_DESKTOP_VERSION=3.6556.1   # latest | X.Y.Z
 RSTUDIO_VERSION=2026.10.0-233     # latest | X.Y.Z-N
+ANTIGRAVITY_VERSION=2.28.2        # latest | X.Y.Z
+PI_VERSION=1.4.0                  # latest | X.Y.Z
 VSCODIUM_VERSION=1.105.0.25000    # any <APP>_VERSION is passed to apps/<app>.sh
 ```
 
@@ -107,7 +109,7 @@ ryad build --code-version=stable --desktop-version=3.6556.1
 
 ## Change the base image
 
-The default base is `ubuntu:26.04`. Any Debian or Ubuntu image works (Ubuntu ≥ 22.04, Debian ≥ 12), because Claude Desktop is only shipped as a `.deb`.
+The default base is `ubuntu:26.04`. Any Debian or Ubuntu image works (Ubuntu ≥ 22.04, Debian ≥ 12). Other distributions don't: some of the apps are only shipped as `.deb` packages.
 
 Build a variant under its own name, so it sits next to the default image:
 
@@ -164,7 +166,7 @@ To make it the default for a profile, set `IMAGE=my-ryad` in its [`profile.conf`
 > [!WARNING]
 > Install tools system-wide, never under `/home`: at runtime the home directory is replaced by the profile.
 >
-> A derived image doesn't follow `ryad build` by itself. Rebuild it after each `ryad build` to pick up new Claude versions.
+> A derived image doesn't follow `ryad build` by itself. Rebuild it after each `ryad build` to pick up new app versions.
 
 ## Applying changes
 

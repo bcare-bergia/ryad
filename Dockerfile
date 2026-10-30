@@ -51,7 +51,7 @@ RUN set -eu; \
 
 # --- 3. third-party apps ----------------------------------------------------
 COPY apps/ /opt/ryad/apps/
-ARG APPS="firefox vscodium rstudio"
+ARG APPS="firefox vscodium rstudio antigravity pi"
 # Space-separated NAME_VERSION=value pairs, exported to app scripts.
 ARG APP_VERSIONS=""
 RUN set -eu; \
