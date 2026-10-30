@@ -9,7 +9,7 @@
 # or liability.
 set -euo pipefail
 
-RYAD_BUNDLE=""                       # "<stamp> <date>" in a bundle made by bundle.sh
+RYAD_BUNDLE=""                       # "<version> <stamp> <date>" in a bundle made by bundle.sh
 PROG=$(basename "$0")
 SELF=${BASH_SOURCE[0]}
 # Files the image is built from, and the license that must travel with any
@@ -857,7 +857,9 @@ has_bundle() { grep -qx "$MARKER" "$SELF" 2>/dev/null; }
 
 print_version() {
   if [ -n "$RYAD_BUNDLE" ]; then
-    echo "ryad ${RYAD_BUNDLE% *} (bundled ${RYAD_BUNDLE#* })"
+    local version stamp date
+    read -r version stamp date <<<"$RYAD_BUNDLE"
+    echo "ryad $version ($stamp, bundled $date)"
   else
     echo "ryad (unbundled source: $(readlink -f "$SELF"); make a single-file copy with bundle.sh)"
   fi

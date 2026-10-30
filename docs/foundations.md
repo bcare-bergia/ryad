@@ -9,6 +9,7 @@ How ryad works under the hood. You don't need any of this to use it; it helps wh
 - [Display plumbing](#display-plumbing)
 - [Electron app wrappers](#electron-app-wrappers)
 - [Bundling and versions](#bundling-and-versions)
+- [Releases](#releases)
 - [Repository layout](#repository-layout)
 
 ## Overview
@@ -104,7 +105,36 @@ Antigravity, Claude Desktop, VSCodium and RStudio are Electron apps. Their insta
 
 [bundle.sh](../bundle.sh) makes `dist/ryad`: the launcher, followed by a marker line and the build files as a base64 `tar.gz`. `ryad build` unpacks them into a temporary folder, adds your files from `~/.config/ryad/`, and runs `podman build` there.
 
-The archive is reproducible (sorted names, fixed owners and timestamps), and the version stamp is the first 12 hex digits of the SHA-256 of the launcher and the archive. Two bundles with the same stamp are byte-for-byte the same build. Each image records the stamp of the bundle that built it (`org.ryad.launcher`), or `source` when built with `--context`.
+The archive is reproducible (sorted names, fixed owners and timestamps). `ryad --version` shows two things:
+
+- the **version**: `X.Y.Z` in a release, otherwise `git describe` of the checkout it was bundled from (`0.1.0-3-g95356cf`, `-dirty` with uncommitted changes), or `dev` outside a checkout;
+- the **stamp**: the first 12 hex digits of the SHA-256 of the launcher and the archive. Two bundles with the same stamp are byte-for-byte the same build, whatever their version says.
+
+Each image records the version and stamp of the bundle that built it (`org.ryad.launcher`), or `source` when built with `--context`.
+
+## Releases
+
+A release is a git tag `vX.Y.Z` (semantic versioning), its section in [CHANGELOG.md](../CHANGELOG.md), and the files [release.sh](../release.sh) makes from the tag:
+
+| File | |
+|---|---|
+| `ryad-X.Y.Z` | the bundle |
+| `ryad-X.Y.Z.run` | the installer: [installer/stub.sh](../installer/stub.sh), followed by a marker line and a base64 `tar.gz` of the bundle, its bash completion and the docs |
+| `SHA256SUMS`, `SHA256SUMS.sig` | checksums of both, signed with an SSH key (`ssh-keygen -Y sign`, namespace `file`) |
+| `RELEASE_NOTES.md` | the version's changelog section, for the GitHub release |
+
+To make one:
+
+1. In `CHANGELOG.md`, rename `## [Unreleased]` to `## [X.Y.Z] - YYYY-MM-DD` and add a new, empty `Unreleased` above it. Commit.
+2. `git tag -a vX.Y.Z -m "ryad X.Y.Z"`, then `git push origin main vX.Y.Z`.
+3. `./release.sh X.Y.Z --key=~/.ssh/KEY --publish` (or set `RYAD_SIGNING_KEY`). The key must be one of those listed at `github.com/bcare-bergia.keys`, since that is what users check the signature against.
+4. Review the draft release on GitHub, then publish it there, or with `gh release edit vX.Y.Z --draft=false`.
+
+`release.sh` builds from the tag with `git archive`, not from the working tree, with the dates taken from the tagged commit. It builds everything twice and stops if the two differ, then runs [tests/installer-test.sh](../tests/installer-test.sh) (install, upgrade, a damaged copy, uninstall, in a throwaway `HOME`) before signing. The files land in `dist/release/X.Y.Z/`. With `--publish`, it asks, then uploads them with `gh` as a draft release, which only the repository's collaborators can see until it's published.
+
+`./release.sh --snapshot` does the same from the working tree, unsigned, into `dist/release/snapshot/`, to try the installer before tagging.
+
+The installer checks the payload's SHA-256 before extracting anything, copies each file next to its destination and renames it over, and records what it installed in `share/ryad/install.manifest` under the prefix. That record is what `--uninstall` removes, and what an upgrade compares against to remove files a newer version no longer has.
 
 ## Repository layout
 
@@ -113,6 +143,10 @@ Dockerfile         image definition (layers: apt lists → user → apps → Cla
 build.conf         default build settings
 ryad               launcher: environments, profiles, and 'ryad build'
 bundle.sh          makes dist/ryad: the launcher with the build files embedded
+release.sh         makes the release files from a tag (see Releases)
+installer/stub.sh  the installer's script part
+tests/             installer test, run by release.sh
+CHANGELOG.md       what changed in each release
 build.sh           'ryad build' with this folder's build files
 entrypoint.sh      in-container init: user name, session D-Bus, keyring
 profile.d/         login banner and prompt colors for sandbox shells

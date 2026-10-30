@@ -111,7 +111,7 @@ WORKDIR /home/claude
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["idle"]
 
-# Which ryad bundle built this image (its --version stamp, or "source"). Last,
+# Which ryad bundle built this image ("<version> <stamp>", or "source"). Last,
 # so that a new stamp doesn't invalidate any cached layer.
 ARG RYAD_LAUNCHER=""
 LABEL org.ryad.launcher="${RYAD_LAUNCHER}"

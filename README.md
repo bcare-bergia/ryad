@@ -64,7 +64,8 @@ GUI apps started inside the sandbox open on your normal Wayland or X11 desktop. 
 
 ## Try it
 
-> **Before you trust ryad with anything:**
+> [!WARNING]
+> ⚠️ **Before you trust ryad with anything:** ⚠️
 >
 > - **Yes, it was almost entirely vibe coded**, written with LLM coding agents and only lightly reviewed. Expect bugs and rough edges. Beware.
 > - **I'm not a security expert, and ryad hasn't been audited.** It reduces what your tools can reach; it isn't a hardened security boundary. Read the [Security model](docs/security.md) for what it doesn't isolate. Beware.
@@ -74,9 +75,8 @@ GUI apps started inside the sandbox open on your normal Wayland or X11 desktop. 
 You need Linux with **rootless Podman**, plus `curl` and `jq`.
 
 ```bash
-# 1. Install: ryad is a single file
-./bundle.sh
-install -m 0755 dist/ryad ~/.local/bin/ryad
+# 1. Install: download ryad-X.Y.Z.run from the latest release, then
+bash ryad-X.Y.Z.run
 
 # 2. Build the image (a few GB, takes a while the first time)
 ryad build
@@ -92,7 +92,7 @@ The last command creates the environment "acme" and opens a shell in it. From th
 you@acme:~/projects/acme$ pi            # or claude, antigravity, codium …
 ```
 
-See [Getting started](docs/getting-started.md) for the details.
+See [Getting started](docs/getting-started.md) for the details, including how to check the download and how to install from this repository.
 
 ## Examples
 

@@ -42,7 +42,15 @@ Each build adds an image of several GB. `ryad prune` lists the ryad images that 
 
 ## Upgrading ryad itself
 
-Update your copy of this repository, then make and install a new bundle:
+Run the installer of the new [release](https://github.com/bcare-bergia/ryad/releases), after checking it as in [Getting started](getting-started.md#from-a-release):
+
+```bash
+bash ryad-X.Y.Z.run
+```
+
+It replaces the installed `ryad` and shows what changed since your version, from [CHANGELOG.md](../CHANGELOG.md). Then move your environments onto the new version with `ryad build` and `ryad recreate --outdated`.
+
+From a checkout, update it, then make and install a new bundle:
 
 ```bash
 ./bundle.sh

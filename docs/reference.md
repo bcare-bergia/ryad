@@ -51,7 +51,7 @@ Every command, option, setting and file, in one place. For explanations, follow 
 |---|---|
 | `ryad build [options]` | build the image ([Build options](#build-options)) |
 | `ryad prune [--yes]` | remove ryad images no container uses, except `:latest` |
-| `ryad --version` | which bundle this `ryad` is |
+| `ryad --version` | its version and bundle hash |
 | `ryad completion bash` | print the bash completion script |
 
 ### Aliases

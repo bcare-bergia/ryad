@@ -19,15 +19,41 @@ This guide takes you from a fresh checkout to an AI agent working in a sandbox.
 
 ## Install
 
-`ryad` is a single file. Make it from this repository, then copy it anywhere on your `PATH`:
+`ryad` is a single file. Install it with the installer of a [release](https://github.com/bcare-bergia/ryad/releases), or make it from this repository.
+
+### From a release
+
+Download `ryad-X.Y.Z.run`, `SHA256SUMS` and `SHA256SUMS.sig` from the release, check them, then run the installer:
+
+```bash
+curl -fsSL https://github.com/bcare-bergia.keys | sed 's/^/bcare-bergia /' > allowed_signers
+ssh-keygen -Y verify -f allowed_signers -I bcare-bergia -n file -s SHA256SUMS.sig < SHA256SUMS
+sha256sum --ignore-missing -c SHA256SUMS
+bash ryad-X.Y.Z.run
+```
+
+The first two lines check that `SHA256SUMS` was signed with one of the author's SSH keys, as published on GitHub. The third checks the installer against it.
+
+The installer shows the license, then installs `ryad` in `~/.local/bin`, its [shell completion](#shell-completion), and these docs in `~/.local/share/doc/ryad`. It never touches your profiles, settings, images or environments. Its options:
+
+| | |
+|---|---|
+| `--prefix=DIR` | install in `DIR/bin` and `DIR/share` instead of `~/.local` |
+| `--yes` | accept the license without asking |
+| `--uninstall` | remove what it installed |
+| `--list`, `--extract=DIR` | show or write out the files it carries, without installing |
+
+The release also has the plain `ryad-X.Y.Z` file, if you'd rather copy it onto your `PATH` yourself.
+
+### From this repository
 
 ```bash
 ./bundle.sh                                  # writes dist/ryad
 install -m 0755 dist/ryad ~/.local/bin/ryad
-ryad --version                               # ryad f9d05fd960b1 (bundled 2026-10-30)
+ryad --version                               # ryad 0.1.0-3-g95356cf (4e7c8584977f, bundled 2026-10-30)
 ```
 
-The bundled `dist/ryad` carries the files the image is built from (the Dockerfile, `apps/`, `packages/`…), so `ryad build` works from anywhere without this repository. The version is a short hash of the bundle's contents: two copies with the same version are identical.
+The bundled `dist/ryad` carries the files the image is built from (the Dockerfile, `apps/`, `packages/`…), so `ryad build` works from anywhere without this repository. The version is the release it comes from, from `git describe` (`0.1.0`, or `0.1.0-3-g95356cf` three commits later), followed by a short hash of the bundle's contents: two copies with the same hash are identical.
 
 After changing anything in the repository, run `./bundle.sh` again and reinstall.
 
@@ -94,7 +120,7 @@ API keys (`OPENAI_API_KEY`, `GEMINI_API_KEY`, `ANTHROPIC_API_KEY`…) and cloud-
 
 Bash completion covers subcommands, environment and profile names, options, `--display=` modes, `--image=` images and `--workspace=` folders.
 
-Load it from `~/.bashrc`:
+The [installer](#from-a-release) sets it up. Otherwise, load it from `~/.bashrc`:
 
 ```bash
 source <(ryad completion bash)
