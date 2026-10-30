@@ -87,9 +87,8 @@ You need Linux with **rootless Podman**, plus `curl` and `jq`.
 **1. Download** the installer of the [latest release](https://github.com/bcare-bergia/ryad/releases/latest), with its checksums and their signature:
 
 ```bash
-v=$(curl -fsSL https://api.github.com/repos/bcare-bergia/ryad/releases/latest | jq -r .tag_name)   # e.g. v0.1.0
-base=https://github.com/bcare-bergia/ryad/releases/download/$v
-curl -fsSL --remote-name-all "$base/ryad-${v#v}.run" "$base/SHA256SUMS" "$base/SHA256SUMS.sig"
+base=https://github.com/bcare-bergia/ryad/releases/latest/download
+curl -fsSL --remote-name-all "$base/ryad.run" "$base/SHA256SUMS" "$base/SHA256SUMS.sig"
 ```
 
 **2. Check** that they come from the author and arrived intact. The signature must come from one of the SSH keys published at [github.com/bcare-bergia.keys](https://github.com/bcare-bergia.keys), and the installer must match its checksum:
@@ -97,17 +96,17 @@ curl -fsSL --remote-name-all "$base/ryad-${v#v}.run" "$base/SHA256SUMS" "$base/S
 ```bash
 curl -fsSL https://github.com/bcare-bergia.keys | sed 's/^/bcare-bergia /' > allowed_signers
 ssh-keygen -Y verify -f allowed_signers -I bcare-bergia -n file -s SHA256SUMS.sig < SHA256SUMS   # Good "file" signature…
-sha256sum --ignore-missing -c SHA256SUMS                                                          # ryad-X.Y.Z.run: OK
+sha256sum --ignore-missing -c SHA256SUMS                                                          # ryad.run: OK
 ```
 
 **3. Install.** The installer shows the license, then puts `ryad` in `~/.local/bin`, with its shell completion and these docs. It never touches your profiles, settings, images or environments.
 
 ```bash
-bash ryad-${v#v}.run
+bash ryad.run
 ryad --version
 ```
 
-To upgrade later, do the same with the newer release. `bash ryad-X.Y.Z.run --help` lists the installer's options: another `--prefix`, `--uninstall`…
+To upgrade later, do the same with the newer release. `bash ryad.run --help` lists the installer's options: another `--prefix`, `--uninstall`…
 
 **4. Build the image** (a few GB, it takes a while the first time) **and step into a project:**
 

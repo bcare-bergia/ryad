@@ -335,8 +335,8 @@ create_env() {
     --label "$LBL.gpu=$gpu"
     --label "$LBL.user=$user"
     --label "$LBL.hostname=$host"
-    --userns=keep-id:uid=$CUID,gid=$CUID
-    --user $CUID:$CUID
+    --userns="keep-id:uid=$CUID,gid=$CUID"
+    --user "$CUID:$CUID"
     --security-opt label=disable
     --shm-size=2g
     --tmpfs "$CRUN:rw,mode=0700,U"
@@ -440,6 +440,7 @@ recreate_env() {
   local n=$1 c new
   c=$(cname "$n") new="$(cname "$n").new"
   podman rm -f "$new" >/dev/null 2>&1 || true    # left over by an interrupted recreate
+  # shellcheck disable=SC2064  # expand $new now: it is out of scope when EXIT fires, and printf %q quotes it
   trap "podman rm -f $(printf %q "$new") >/dev/null 2>&1 || true" EXIT
   create_env "$n" "$R_P" "$R_W" "$R_I" "$R_D" "$R_G" "$R_U" "$R_H" "$new"
   podman rm -f -t 10 "$c" >/dev/null
@@ -666,7 +667,7 @@ apps_list() {
     fi
     if [ -f "$CONFIG_ROOT/apps/$n.sh" ]; then
       if [ -f "$BF/apps/$n.sh" ]; then src="yours (replaces built-in)"; else src=yours; fi
-    elif [ -f "$BF/apps/$n.sh" ]; then src=built-in
+    elif [ -f "$BF/apps/$n.sh" ]; then src="built-in"
     else src="(no installer)"; fi
     rows+="$n$T$st$T$src$T$(app_meta "$n" commands)$T$(app_meta "$n" description)"$'\n'
   done
@@ -688,10 +689,10 @@ apps_list() {
 # list, or changes to the built-in list), then offer to apply the change.
 apps_edit() {
   local action=$1 f=$CONFIG_ROOT/build.conf ln=0 line val="" rest="" bare=0 t n dflt new tmpf changed=0
-  local -a hits=() toks=() keep=()
+  local -a hits=() toks=() kept=()
   local q="'"
   local re1='^[[:space:]]*APPS="([^"$`\\]*)"[[:space:]]*(#.*)?$'
-  local re2="^[[:space:]]*APPS=$q([^$q]*)$q[[:space:]]*(#.*)?\$"
+  local re2="^[[:space:]]*APPS=$q([^$q]*)${q}[[:space:]]*(#.*)?\$"
   local re3='^[[:space:]]*APPS=([^[:space:]"'"$q"'$`\\#]*)[[:space:]]*(#.*)?$'
   shift
   [ $# -gt 0 ] || die "usage: $PROG apps $action APP..."
@@ -718,9 +719,9 @@ apps_edit() {
     esac
     # Drop what the line says about the app, then say what's needed, if anything:
     # in a list, only your own apps are there without being named.
-    keep=()
-    for t in ${toks[@]+"${toks[@]}"}; do [ "${t#[+-]}" = "$n" ] || keep+=("$t"); done
-    toks=(${keep[@]+"${keep[@]}"})
+    kept=()
+    for t in ${toks[@]+"${toks[@]}"}; do [ "${t#[+-]}" = "$n" ] || kept+=("$t"); done
+    toks=(${kept[@]+"${kept[@]}"})
     if [ $bare = 1 ]; then dflt=" $CUSTOM_APPS"; else dflt=" $DEFAULT_APPS $CUSTOM_APPS"; fi
     case $action in
       add) [[ $dflt == *" $n "* ]] || toks+=("$([ $bare = 1 ] || echo +)$n") ;;
@@ -906,6 +907,7 @@ build_main() {
   # Build files: from --context, or unpacked from this script, into a temp dir.
   local tmp
   tmp=$(mktemp -d "${TMPDIR:-/tmp}/ryad-build.XXXXXX")
+  # shellcheck disable=SC2064  # expand $tmp now: it is out of scope when EXIT fires, and printf %q quotes it
   trap "rm -rf $(printf %q "$tmp")" EXIT
   unpack_build_files "$tmp" "$ctx"
 
@@ -938,6 +940,7 @@ build_main() {
   EXTRA_PACKAGES="$EXTRA_PACKAGES$pkgs"
   [ -z "$ccv" ] || CLAUDE_CODE_VERSION=$ccv
   [ -z "$cdv" ] || CLAUDE_DESKTOP_VERSION=$cdv
+  # shellcheck disable=SC2034  # read indirectly, as ${!var}, when the per-app build args are built
   [ -z "$rsv" ] || RSTUDIO_VERSION=$rsv
   [ ${#added[@]} -eq 0 ] || echo "==> Your additions: ${added[*]}"
   echo "==> Apps: $ALWAYS_APPS${APPS:+ $APPS}"
@@ -1274,8 +1277,8 @@ COMPLETION
         for p in "${POS[@]}"; do
           check_profile "$p"
           [ -d "$PROFILES_DIR/$p" ] || die "no profile '$p'"
-          users=$(env_names -a --filter "label=$LBL.profile=$p" | sort | tr '\n' ' ')
-          [ -z "$users" ] || die "profile '$p' is used by: $users(remove them first: $PROG rm ${users% })"
+          inuse=$(env_names -a --filter "label=$LBL.profile=$p" | sort | tr '\n' ' ')
+          [ -z "$inuse" ] || die "profile '$p' is used by: $inuse(remove them first: $PROG rm ${inuse% })"
         done
         [ "$YES" = 1 ] || echo "Delete profile(s) ${POS[*]}? Their logins, settings and history are lost."
         confirm "Continue?"
@@ -1300,6 +1303,7 @@ COMPLETION
     [ -z "$APPS_CTX" ] || [ -f "$APPS_CTX/Dockerfile" ] \
       || die "this ryad has no embedded build files (it's the unbundled source); make a bundle with bundle.sh"
     tmp=$(mktemp -d "${TMPDIR:-/tmp}/ryad-apps.XXXXXX")
+    # shellcheck disable=SC2064  # expand $tmp now: it may be out of scope when EXIT fires, and printf %q quotes it
     trap "rm -rf $(printf %q "$tmp")" EXIT
     unpack_build_files "$tmp" "$APPS_CTX"
     load_apps "$tmp"
@@ -1501,7 +1505,7 @@ else
   WS=$(resolve_workspace "${WORKSPACE:-$PWD}")
   if [ -z "$NAME" ]; then
     NAME=$(basename "$WS" | tr 'A-Z' 'a-z' | sed -E 's/[^a-z0-9_-]+/-/g; s/^[^a-z0-9]+//')
-    [ -n "$NAME" ] || NAME=env
+    [ -n "$NAME" ] || NAME="env"
     valid_name "$NAME" || NAME="env-$NAME"
   fi
   if exists "$NAME"; then

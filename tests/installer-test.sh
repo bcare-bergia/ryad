@@ -2,7 +2,7 @@
 # Test an installer made by release.sh, in a throwaway HOME: install, upgrade,
 # a damaged copy, uninstall. Doesn't build images or touch environments.
 #
-#   tests/installer-test.sh ryad-X.Y.Z.run X.Y.Z
+#   tests/installer-test.sh ryad.run X.Y.Z
 set -euo pipefail
 
 run=$(realpath "${1:?usage: $0 INSTALLER VERSION}") version=${2:?usage: $0 INSTALLER VERSION}

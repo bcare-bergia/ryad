@@ -82,12 +82,15 @@
 #   - with --publish: gh auth status
 #
 # OUTPUT, in dist/release/X.Y.Z/
-#   ryad-X.Y.Z          the single-file bundle (as bundle.sh makes it)
-#   ryad-X.Y.Z.run      the installer: installer/stub.sh with the bundle, shell
+#   ryad                the single-file bundle (as bundle.sh makes it)
+#   ryad.run            the installer: installer/stub.sh with the bundle, shell
 #                       completion and docs appended as a base64 tar.gz
 #   SHA256SUMS          checksums of both
 #   SHA256SUMS.sig      its SSH signature (ssh-keygen -Y sign, namespace "file")
 #   RELEASE_NOTES.md    the version's section of CHANGELOG.md
+#
+# The names carry no version: the directory does, and GitHub then serves the
+# latest release's files at releases/latest/download/ryad.run, a stable URL.
 #
 # The files are built from the commit (git archive), never from the working
 # tree, with dates taken from that commit; uncommitted changes can't leak in.
@@ -193,9 +196,9 @@ notes=$(awk -v v="$section" '
 build() {
   local d=$1 p=$tmp/payload.$RANDOM sum f
   mkdir -p "$d"
-  (cd "$src" && ./bundle.sh -o "$d/ryad-$version" >/dev/null)
+  (cd "$src" && ./bundle.sh -o "$d/ryad" >/dev/null)
   mkdir -p "$p/bin" "$p/share/bash-completion/completions" "$p/share/doc/ryad"
-  cp "$d/ryad-$version" "$p/bin/ryad"
+  cp "$d/ryad" "$p/bin/ryad"
   # Run as 'ryad' (its name), so the completion is registered for 'ryad'.
   "$p/bin/ryad" completion bash > "$p/share/bash-completion/completions/ryad"
   for f in README.md CHANGELOG.md LICENSE.md docs; do cp -r "$src/$f" "$p/share/doc/ryad/"; done
@@ -209,8 +212,8 @@ build() {
     sed -e "s/@VERSION@/$version/g" -e "s/@PAYLOAD_SHA256@/$sum/" "$src/installer/stub.sh"
     echo __RYAD_INSTALLER_PAYLOAD__
     base64 -w 76 "$p.tar.gz"
-  } > "$d/ryad-$version.run"
-  chmod 0755 "$d/ryad-$version.run"
+  } > "$d/ryad.run"
+  chmod 0755 "$d/ryad.run"
   printf '%s\n' "$notes" > "$d/RELEASE_NOTES.md"
 }
 step "Build"
@@ -220,13 +223,13 @@ diff -r "$tmp/a" "$tmp/b" >/dev/null || die "two builds differ: the release isn'
 
 # --- test ------------------------------------------------------------------------------
 step "Test the installer"
-"$src/tests/installer-test.sh" "$tmp/a/ryad-$version.run" "$version"
+"$src/tests/installer-test.sh" "$tmp/a/ryad.run" "$version"
 
 # --- checksums, signature ---------------------------------------------------------------
 rm -rf "$out"
 mkdir -p "$out"
 cp -a "$tmp/a/." "$out/"
-(cd "$out" && sha256sum "ryad-$version" "ryad-$version.run" > SHA256SUMS)
+(cd "$out" && sha256sum ryad ryad.run > SHA256SUMS)
 if [ "$snapshot" = 0 ]; then
   step "Sign SHA256SUMS with $key"
   ssh-keygen -Y sign -q -f "$key" -n file "$out/SHA256SUMS"
@@ -271,5 +274,5 @@ read -r -p "Upload ryad $version to GitHub as a draft release? [y/N] " r
 [[ $r == [yY]* ]] || { echo "not uploaded; the files are in $out"; exit 0; }
 step "Draft release $tag"
 gh release create "$tag" --draft --verify-tag --title "ryad $version" --notes-file "$out/RELEASE_NOTES.md" \
-  "$out/ryad-$version" "$out/ryad-$version.run" "$out/SHA256SUMS" "$out/SHA256SUMS.sig"
+  "$out/ryad" "$out/ryad.run" "$out/SHA256SUMS" "$out/SHA256SUMS.sig"
 echo "    Review it on GitHub, then publish it there, or with: gh release edit $tag --draft=false"

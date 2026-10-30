@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ryad @VERSION@ installer, made by release.sh. Run it with: bash ryad-@VERSION@.run
+# ryad @VERSION@ installer, made by release.sh. Run it with: bash ryad.run
 # Installs ryad for your user (~/.local by default); see --help.
 #
 # Copyright (c) 2026 Bertrand Care. Sustainable Use License 1.0, see LICENSE.md

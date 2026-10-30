@@ -23,19 +23,18 @@ This guide takes you from a fresh checkout to an AI agent working in a sandbox.
 
 ### From a release
 
-Download `ryad-X.Y.Z.run`, `SHA256SUMS` and `SHA256SUMS.sig` from the release, check them, then run the installer:
+Download `ryad.run`, `SHA256SUMS` and `SHA256SUMS.sig` from the release, check them, then run the installer:
 
 ```bash
-v=$(curl -fsSL https://api.github.com/repos/bcare-bergia/ryad/releases/latest | jq -r .tag_name)   # e.g. v0.1.0
-base=https://github.com/bcare-bergia/ryad/releases/download/$v
-curl -fsSL --remote-name-all "$base/ryad-${v#v}.run" "$base/SHA256SUMS" "$base/SHA256SUMS.sig"
+base=https://github.com/bcare-bergia/ryad/releases/latest/download
+curl -fsSL --remote-name-all "$base/ryad.run" "$base/SHA256SUMS" "$base/SHA256SUMS.sig"
 curl -fsSL https://github.com/bcare-bergia.keys | sed 's/^/bcare-bergia /' > allowed_signers
 ssh-keygen -Y verify -f allowed_signers -I bcare-bergia -n file -s SHA256SUMS.sig < SHA256SUMS
 sha256sum --ignore-missing -c SHA256SUMS
-bash ryad-${v#v}.run
+bash ryad.run
 ```
 
-The first three lines download the latest release. The next two check that `SHA256SUMS` was signed with one of the author's SSH keys, as published on GitHub, and the one after checks the installer against it.
+The release files carry no version in their names, so `releases/latest/download/` always points at the newest release: the first two lines download it. The next two check that `SHA256SUMS` was signed with one of the author's SSH keys, as published on GitHub, and the one after checks the installer against it. For an older release, take the same file names from its own page.
 
 The installer shows the license, then installs `ryad` in `~/.local/bin`, its [shell completion](#shell-completion), and these docs in `~/.local/share/doc/ryad`. It never touches your profiles, settings, images or environments. Its options:
 
@@ -46,7 +45,7 @@ The installer shows the license, then installs `ryad` in `~/.local/bin`, its [sh
 | `--uninstall` | remove what it installed |
 | `--list`, `--extract=DIR` | show or write out the files it carries, without installing |
 
-The release also has the plain `ryad-X.Y.Z` file, if you'd rather copy it onto your `PATH` yourself.
+The release also has the plain `ryad` file, if you'd rather copy it onto your `PATH` yourself.
 
 ### From this repository
 
