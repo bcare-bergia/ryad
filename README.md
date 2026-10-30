@@ -121,6 +121,12 @@ See [Getting started](docs/getting-started.md) for the details, including how to
 
 ## Examples
 
+Two projects, two profiles, each with its own prompt colors. Neither environment sees `~/.ssh` or the other project, and VSCodium starts in the background from the first one:
+
+<p align="center">
+  <img src="art/demo.svg" alt="A terminal session: in ~/projects/acme, 'ryad --profile=personal' creates the environment acme and opens a shell with a teal prompt, where 'ls ~/.ssh' finds nothing. Back on the host, 'ryad -d -- codium .' starts VSCodium in it. In ~/clients/x/api, 'ryad --profile=client-x' opens a shell with an orange prompt, where 'ls ~/projects' finds nothing.">
+</p>
+
 **Keep clients apart.** Each profile has its own logins, keys and history.
 
 ```bash

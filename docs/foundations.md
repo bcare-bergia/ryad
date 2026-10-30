@@ -159,6 +159,6 @@ sbin/              in-container helper that renames the user (--user)
 packages/*.list    apt packages, one per line
 apps/*.sh          third-party app installers (apps/lib.sh holds the Electron wrapper)
 examples/          derived-image example
-art/               the README picture and the script that renders it
+art/               the README pictures and terminal demo, and the scripts that render them
 docs/              this documentation
 ```
