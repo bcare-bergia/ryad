@@ -126,11 +126,14 @@ A release is a git tag `vX.Y.Z` (semantic versioning), its section in [CHANGELOG
 To make one:
 
 1. In `CHANGELOG.md`, rename `## [Unreleased]` to `## [X.Y.Z] - YYYY-MM-DD` and add a new, empty `Unreleased` above it. Commit.
-2. `git tag -a vX.Y.Z -m "ryad X.Y.Z"`, then `git push origin main vX.Y.Z`.
-3. `./release.sh X.Y.Z --key=~/.ssh/KEY --publish` (or set `RYAD_SIGNING_KEY`). The key must be one of those listed at `github.com/bcare-bergia.keys`, since that is what users check the signature against.
-4. Review the draft release on GitHub, then publish it there, or with `gh release edit vX.Y.Z --draft=false`.
+2. Try it: `./release.sh --snapshot`, then install the snapshot on a real machine, over the previous release.
+3. Tag without pushing: `git tag -a vX.Y.Z -m "ryad X.Y.Z"`, then `./release.sh --key=~/.ssh/KEY` (or set `RYAD_SIGNING_KEY`). If it fails, fix, commit and move the tag, which is easy while it isn't pushed. The key must be one of those listed at `github.com/bcare-bergia.keys`, since that is what users check the signature against.
+4. `git push origin main vX.Y.Z`, then `./release.sh --key=~/.ssh/KEY --publish`.
+5. Review the draft release on GitHub, then publish it there, or with `gh release edit vX.Y.Z --draft=false`. Once published, a version is final: fix it with a new one.
 
-`release.sh` builds from the tag with `git archive`, not from the working tree, with the dates taken from the tagged commit. It builds everything twice and stops if the two differ, then runs [tests/installer-test.sh](../tests/installer-test.sh) (install, upgrade, a damaged copy, uninstall, in a throwaway `HOME`) before signing. The files land in `dist/release/X.Y.Z/`. With `--publish`, it asks, then uploads them with `gh` as a draft release, which only the repository's collaborators can see until it's published.
+`./release.sh --help` has the details, including what to check by hand that the script can't.
+
+`release.sh` takes the version from git: the current commit must carry exactly one `vX.Y.Z` tag. It builds from that tag with `git archive`, not from the working tree, with the dates taken from the tagged commit. It builds everything twice and stops if the two differ, then runs [tests/installer-test.sh](../tests/installer-test.sh) (install, upgrade, a damaged copy, uninstall, in a throwaway `HOME`) before signing. The files land in `dist/release/X.Y.Z/`. With `--publish`, it asks, then uploads them with `gh` as a draft release, which only the repository's collaborators can see until it's published.
 
 `./release.sh --snapshot` does the same from the working tree, unsigned, into `dist/release/snapshot/`, to try the installer before tagging.
 
