@@ -78,14 +78,35 @@ GUI apps started inside the sandbox open on your normal Wayland or X11 desktop. 
 
 You need Linux with **rootless Podman**, plus `curl` and `jq`.
 
+**1. Download** the installer of the [latest release](https://github.com/bcare-bergia/ryad/releases/latest), with its checksums and their signature:
+
 ```bash
-# 1. Install: download ryad-X.Y.Z.run from the latest release, then
-bash ryad-X.Y.Z.run
+v=$(curl -fsSL https://api.github.com/repos/bcare-bergia/ryad/releases/latest | jq -r .tag_name)   # e.g. v0.1.0
+base=https://github.com/bcare-bergia/ryad/releases/download/$v
+curl -fsSL --remote-name-all "$base/ryad-${v#v}.run" "$base/SHA256SUMS" "$base/SHA256SUMS.sig"
+```
 
-# 2. Build the image (a few GB, takes a while the first time)
+**2. Check** that they come from the author and arrived intact. The signature must come from one of the SSH keys published at [github.com/bcare-bergia.keys](https://github.com/bcare-bergia.keys), and the installer must match its checksum:
+
+```bash
+curl -fsSL https://github.com/bcare-bergia.keys | sed 's/^/bcare-bergia /' > allowed_signers
+ssh-keygen -Y verify -f allowed_signers -I bcare-bergia -n file -s SHA256SUMS.sig < SHA256SUMS   # Good "file" signature…
+sha256sum --ignore-missing -c SHA256SUMS                                                          # ryad-X.Y.Z.run: OK
+```
+
+**3. Install.** The installer shows the license, then puts `ryad` in `~/.local/bin`, with its shell completion and these docs. It never touches your profiles, settings, images or environments.
+
+```bash
+bash ryad-${v#v}.run
+ryad --version
+```
+
+To upgrade later, do the same with the newer release. `bash ryad-X.Y.Z.run --help` lists the installer's options: another `--prefix`, `--uninstall`…
+
+**4. Build the image** (a few GB, it takes a while the first time) **and step into a project:**
+
+```bash
 ryad build
-
-# 3. Step into a project
 cd ~/projects/acme
 ryad
 ```
@@ -96,7 +117,7 @@ The last command creates the environment "acme" and opens a shell in it. From th
 you@acme:~/projects/acme$ pi            # or claude, antigravity, codium …
 ```
 
-See [Getting started](docs/getting-started.md) for the details, including how to check the download and how to install from this repository.
+See [Getting started](docs/getting-started.md) for the details, including how to install from this repository instead.
 
 ## Examples
 
