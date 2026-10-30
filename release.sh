@@ -83,14 +83,14 @@
 #
 # OUTPUT, in dist/release/X.Y.Z/
 #   ryad                the single-file bundle (as bundle.sh makes it)
-#   ryad.run            the installer: installer/stub.sh with the bundle, shell
+#   ryad-installer.run  the installer: installer/stub.sh with the bundle, shell
 #                       completion and docs appended as a base64 tar.gz
 #   SHA256SUMS          checksums of both
 #   SHA256SUMS.sig      its SSH signature (ssh-keygen -Y sign, namespace "file")
 #   RELEASE_NOTES.md    the version's section of CHANGELOG.md
 #
 # The names carry no version: the directory does, and GitHub then serves the
-# latest release's files at releases/latest/download/ryad.run, a stable URL.
+# latest release's files at releases/latest/download/ryad-installer.run, a stable URL.
 #
 # The files are built from the commit (git archive), never from the working
 # tree, with dates taken from that commit; uncommitted changes can't leak in.
@@ -212,8 +212,8 @@ build() {
     sed -e "s/@VERSION@/$version/g" -e "s/@PAYLOAD_SHA256@/$sum/" "$src/installer/stub.sh"
     echo __RYAD_INSTALLER_PAYLOAD__
     base64 -w 76 "$p.tar.gz"
-  } > "$d/ryad.run"
-  chmod 0755 "$d/ryad.run"
+  } > "$d/ryad-installer.run"
+  chmod 0755 "$d/ryad-installer.run"
   printf '%s\n' "$notes" > "$d/RELEASE_NOTES.md"
 }
 step "Build"
@@ -223,13 +223,13 @@ diff -r "$tmp/a" "$tmp/b" >/dev/null || die "two builds differ: the release isn'
 
 # --- test ------------------------------------------------------------------------------
 step "Test the installer"
-"$src/tests/installer-test.sh" "$tmp/a/ryad.run" "$version"
+"$src/tests/installer-test.sh" "$tmp/a/ryad-installer.run" "$version"
 
 # --- checksums, signature ---------------------------------------------------------------
 rm -rf "$out"
 mkdir -p "$out"
 cp -a "$tmp/a/." "$out/"
-(cd "$out" && sha256sum ryad ryad.run > SHA256SUMS)
+(cd "$out" && sha256sum ryad ryad-installer.run > SHA256SUMS)
 if [ "$snapshot" = 0 ]; then
   step "Sign SHA256SUMS with $key"
   ssh-keygen -Y sign -q -f "$key" -n file "$out/SHA256SUMS"
@@ -274,5 +274,5 @@ read -r -p "Upload ryad $version to GitHub as a draft release? [y/N] " r
 [[ $r == [yY]* ]] || { echo "not uploaded; the files are in $out"; exit 0; }
 step "Draft release $tag"
 gh release create "$tag" --draft --verify-tag --title "ryad $version" --notes-file "$out/RELEASE_NOTES.md" \
-  "$out/ryad" "$out/ryad.run" "$out/SHA256SUMS" "$out/SHA256SUMS.sig"
+  "$out/ryad" "$out/ryad-installer.run" "$out/SHA256SUMS" "$out/SHA256SUMS.sig"
 echo "    Review it on GitHub, then publish it there, or with: gh release edit $tag --draft=false"

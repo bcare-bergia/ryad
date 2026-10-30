@@ -119,11 +119,11 @@ A release is a git tag `vX.Y.Z` (semantic versioning), its section in [CHANGELOG
 | File | |
 |---|---|
 | `ryad` | the bundle |
-| `ryad.run` | the installer: [installer/stub.sh](../installer/stub.sh), followed by a marker line and a base64 `tar.gz` of the bundle, its bash completion and the docs |
+| `ryad-installer.run` | the installer: [installer/stub.sh](../installer/stub.sh), followed by a marker line and a base64 `tar.gz` of the bundle, its bash completion and the docs |
 | `SHA256SUMS`, `SHA256SUMS.sig` | checksums of both, signed with an SSH key (`ssh-keygen -Y sign`, namespace `file`) |
 | `RELEASE_NOTES.md` | the version's changelog section, for the GitHub release |
 
-The names carry no version — the directory they are built in, `dist/release/X.Y.Z/`, does. That keeps the download URLs stable: GitHub serves the latest release's files at `releases/latest/download/ryad.run`, so [Getting started](getting-started.md#from-a-release) needs no version lookup.
+The names carry no version — the directory they are built in, `dist/release/X.Y.Z/`, does. That keeps the download URLs stable: GitHub serves the latest release's files at `releases/latest/download/ryad-installer.run`, so [Getting started](getting-started.md#from-a-release) needs no version lookup.
 
 To make one:
 

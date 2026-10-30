@@ -23,15 +23,15 @@ This guide takes you from a fresh checkout to an AI agent working in a sandbox.
 
 ### From a release
 
-Download `ryad.run`, `SHA256SUMS` and `SHA256SUMS.sig` from the release, check them, then run the installer:
+Download `ryad-installer.run`, `SHA256SUMS` and `SHA256SUMS.sig` from the release, check them, then run the installer:
 
 ```bash
 base=https://github.com/bcare-bergia/ryad/releases/latest/download
-curl -fsSL --remote-name-all "$base/ryad.run" "$base/SHA256SUMS" "$base/SHA256SUMS.sig"
+curl -fsSL --remote-name-all "$base/ryad-installer.run" "$base/SHA256SUMS" "$base/SHA256SUMS.sig"
 curl -fsSL https://github.com/bcare-bergia.keys | sed 's/^/bcare-bergia /' > allowed_signers
 ssh-keygen -Y verify -f allowed_signers -I bcare-bergia -n file -s SHA256SUMS.sig < SHA256SUMS
 sha256sum --ignore-missing -c SHA256SUMS
-bash ryad.run
+bash ryad-installer.run
 ```
 
 The release files carry no version in their names, so `releases/latest/download/` always points at the newest release: the first two lines download it. The next two check that `SHA256SUMS` was signed with one of the author's SSH keys, as published on GitHub, and the one after checks the installer against it. For an older release, take the same file names from its own page.

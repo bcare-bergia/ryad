@@ -11,7 +11,7 @@ Release files renamed, so downloading the newest one no longer takes a version l
 
 ### Changed
 
-- The release files are now `ryad` and `ryad.run`, with no version in their names. The newest installer therefore always sits at the same address, `https://github.com/bcare-bergia/ryad/releases/latest/download/ryad.run`, and the checksums and their signature next to it: no need to find the version number first. To upgrade, download those three and run `bash ryad.run`, as in Getting started. `SHA256SUMS` lists the new names, so checking it works as before.
+- The release files are now `ryad` and `ryad-installer.run`, with no version in their names. The newest installer therefore always sits at the same address, `https://github.com/bcare-bergia/ryad/releases/latest/download/ryad-installer.run`, and the checksums and their signature next to it: no need to find the version number first. To upgrade, download those three and run `bash ryad-installer.run`, as in Getting started. `SHA256SUMS` lists the new names, so checking it works as before.
 
 ### Fixed
 
