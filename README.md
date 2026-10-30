@@ -36,6 +36,8 @@ So ryad gives each project its own **environment**, a small Podman container you
 
 Your SSH keys, your documents and your other projects stay outside.
 
+And you can run apps with graphical interfaces like Claude Desktop, VS Codium, Firefox or whatever from each sandboxed environment.
+
 ```
       one image, the same tools in every room: pi, claude, codium, git…
  ┌──────────────────────┬──────────────────────┬──────────────────────┬──────────────────────┐
@@ -58,9 +60,16 @@ It doesn't matter which model or vendor you use. A few tools come preinstalled, 
 | **Browser** | Firefox, for sign-in pages and anything else that needs one |
 | **Toolchains** | git, Python, Node.js, R, build-essential, ripgrep… |
 
-GUI apps started inside the sandbox open on your normal Wayland or X11 desktop. Every app except Claude Code and Claude Desktop can be left out (`ryad apps rm rstudio`), and you can [add your own](docs/customization.md#add-a-third-party-app) (`ryad apps new mytool`).
+GUI apps started inside the sandbox open on your normal Wayland or X11 desktop. Every app except Claude Code and Claude Desktop can be left out (`ryad apps rm rstudio`), and you can [add your own](docs/customization.md#add-a-third-party-app) (`ryad apps new mytool`). [Customization](docs/customization.md#ways-to-add-a-tool) compares the ways to add a tool.
 
 ## Try it
+
+> **Before you trust ryad with anything:**
+>
+> - **Yes, it was almost entirely vibe coded**, written with LLM coding agents and only lightly reviewed. Expect bugs and rough edges. Beware.
+> - **I'm not a security expert, and ryad hasn't been audited.** It reduces what your tools can reach; it isn't a hardened security boundary. Read the [Security model](docs/security.md) for what it doesn't isolate. Beware.
+> - It comes **as is, without any warranty**, and you use it at your own risk. ryad is a personal project: my company, BERGIA Solutions, doesn't publish, distribute or support it, and accepts no liability for it. See [License](#license).
+
 
 You need Linux with **rootless Podman**, plus `curl` and `jq`.
 
@@ -149,3 +158,16 @@ ryad build && ryad recreate --outdated
 | 🧱 [Foundations](docs/foundations.md) | How ryad works under the hood, repository layout |
 | 📖 [Reference](docs/reference.md) | Every command, option, setting and file |
 | 🩺 [Troubleshooting](docs/troubleshooting.md) | Common problems and fixes |
+
+## License
+
+ryad is © 2026 Bertrand Caré, under the [Sustainable Use License 1.0](LICENSE.md). In plain words:
+
+| | |
+|---|---|
+| ✅ **You may** | use and modify ryad for yourself, or for your own business: client work as a freelancer, or internal use in a company, is fine. Share it, free of charge and for non-commercial purposes |
+| ❌ **You may not** | sell ryad or a fork of it, offer it as a paid product or service (hosting included), or remove its license notices |
+
+This makes ryad *source-available*, not open source in the OSI sense. This summary isn't legal advice: the text of [LICENSE.md](LICENSE.md) is what counts. For any other use, ask the author.
+
+ryad comes as is, without any warranty, and its author accepts no liability for it. BERGIA Solutions, the author's company, isn't the licensor: it doesn't publish, distribute or support ryad, and accepts no liability in relation to it either. The apps ryad installs keep their own licenses.

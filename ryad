@@ -3,14 +3,19 @@
 # containers) for AI agents, LLM tools and editors. Each environment
 # sees one workspace folder and one profile; you enter it with a terminal and
 # start the apps from there.
+#
+# Copyright (c) 2026 Bertrand Care. Sustainable Use License 1.0, see LICENSE.md
+# ('ryad build --export DIR' writes it out). Provided as is, without warranty
+# or liability.
 set -euo pipefail
 
 RYAD_BUNDLE=""                       # "<stamp> <date>" in a bundle made by bundle.sh
 PROG=$(basename "$0")
 SELF=${BASH_SOURCE[0]}
-# Files the image is built from. bundle.sh appends them to a copy of this
-# script, after a line holding only the marker, as a base64 tar.gz.
-BUILD_FILES="Dockerfile entrypoint.sh build.conf apps packages profile.d sbin examples"
+# Files the image is built from, and the license that must travel with any
+# copy. bundle.sh appends them to a copy of this script, after a line holding
+# only the marker, as a base64 tar.gz.
+BUILD_FILES="Dockerfile entrypoint.sh build.conf apps packages profile.d sbin examples LICENSE.md"
 MARKER=__RYAD_BUILD_FILES__
 CONFIG_ROOT=${RYAD_HOME:-${XDG_CONFIG_HOME:-$HOME/.config}/ryad}
 PROFILES_DIR=$CONFIG_ROOT/profiles

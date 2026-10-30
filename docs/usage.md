@@ -128,4 +128,4 @@ Commands that delete something ask first; `--yes` (`-y`) skips the question. Opt
 | Profile (logins, settings, history) | ✅ | ✅ | ✅ | ✅ |
 | Workspace | ✅ | ✅ | ✅ | ✅ |
 
-A stopped environment keeps its container filesystem. `recreate` and `rm` discard it. To keep a tool across recreates, [add it to the image](customization.md): `ryad apps add` for an app, a package list for a distro package.
+A stopped environment keeps its container filesystem. `recreate` and `rm` discard it. To keep a tool across recreates, [add it to the image](customization.md): `ryad apps add` for an app, a package list for a distro package. [Customization](customization.md#ways-to-add-a-tool) compares the ways to add a tool.

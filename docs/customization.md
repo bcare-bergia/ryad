@@ -2,6 +2,7 @@
 
 What goes into the ryad image is up to you: extra packages, other apps, pinned versions, another base distribution. This page goes from the simplest change to the most involved.
 
+- [Ways to add a tool](#ways-to-add-a-tool)
 - [Where your settings live](#where-your-settings-live)
 - [Choose the apps](#choose-the-apps)
 - [Add apt packages](#add-apt-packages)
@@ -13,6 +14,28 @@ What goes into the ryad image is up to you: extra packages, other apps, pinned v
 - [Applying changes](#applying-changes)
 
 Per-profile settings (API keys, prompt colors, default image) are covered in [Profiles](profiles.md).
+
+## Ways to add a tool
+
+There are five ways to add a tool to your environments, from the quickest to the most lasting:
+
+- **Install it inside an environment**, with `sudo apt install`, `npm install -g`…
+  - ✅ Instant, no rebuild: the way to try something out.
+  - ❌ That environment only, and [gone at its next `recreate`](usage.md#what-survives-what), which every [upgrade](upgrading.md) does.
+- **[Turn on a built-in app](#choose-the-apps)**, with `ryad apps add rstudio`.
+  - ✅ One command. ryad maintains the installer, and you can pin its version.
+  - ❌ Only for the apps ryad ships. Takes a rebuild and a recreate.
+- **[Add a distro package](#add-apt-packages)**, with a line in `~/.config/ryad/packages/50-mine.list`.
+  - ✅ Nothing to write but its name.
+  - ❌ Only the distro's version, often behind for fast-moving LLM tools. Not listed by `ryad apps`. Changing a list also rebuilds every app layer, so the build takes longer.
+- **[Write an app installer](#add-a-third-party-app)**, with `ryad apps new mytool`.
+  - ✅ Works for anything: npm, pip, a `.deb`, a tarball, an apt repository. Pinned or always-latest versions, its own image layer, and listed by `ryad apps` and in the shell banner like a built-in app.
+  - ❌ A script you write and maintain, which runs as root during the build and must install outside `/home`.
+- **[Build your own image on top](#build-your-own-image-on-top)**, with a Containerfile `FROM localhost/ryad:latest`.
+  - ✅ Plain Podman, full control.
+  - ❌ Doesn't follow `ryad build`: you rebuild it yourself after each one, and point environments at it with `--image`.
+
+In short: to try a tool, install it inside. To keep it, turn it on if ryad ships it, add a package if your distro has a recent enough one, and write an installer for anything else. Build your own image only if you already maintain one.
 
 ## Where your settings live
 
