@@ -107,7 +107,7 @@ Antigravity, Claude Desktop, VSCodium and RStudio are Electron apps. Their insta
 
 The archive is reproducible (sorted names, fixed owners and timestamps). `ryad --version` shows two things:
 
-- the **version**: `X.Y.Z` in a release, otherwise `git describe` of the checkout it was bundled from (`0.1.0-3-g95356cf`, `-dirty` with uncommitted changes), or `dev` outside a checkout;
+- the **version**: `X.Y.Z` in a release, otherwise `git describe` of the checkout it was bundled from (`0.1.2-3-g1a2b3c4`, `-dirty` with uncommitted changes), or `dev` outside a checkout;
 - the **stamp**: the first 12 hex digits of the SHA-256 of the launcher and the archive. Two bundles with the same stamp are byte-for-byte the same build, whatever their version says.
 
 Each image records the version and stamp of the bundle that built it (`org.ryad.launcher`), or `source` when built with `--context`.

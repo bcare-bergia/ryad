@@ -8,6 +8,7 @@
 # @commands pi
 # @needs firefox
 # @latest curl -fsSL https://registry.npmjs.org/@earendil-works/pi-coding-agent/latest | jq -r .version
+# shellcheck shell=bash
 . "$(dirname "$0")/lib.sh"
 
 PKG=@earendil-works/pi-coding-agent

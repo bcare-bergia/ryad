@@ -3,6 +3,7 @@
 #
 # @description Firefox web browser; opens the other apps' sign-in pages
 # @commands firefox
+# shellcheck shell=bash
 . "$(dirname "$0")/lib.sh"
 
 install -d -m 0755 /etc/apt/keyrings

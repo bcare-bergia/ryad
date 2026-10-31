@@ -28,7 +28,7 @@ This one command does everything:
 $ cd ~/projects/acme/src
 $ ryad
 ryad 'acme' · profile work · workspace /home/you/projects/acme
-  pi  antigravity  claude  claude-desktop  codium  rstudio  emacs  firefox
+  claude  claude-desktop  firefox  codium  rstudio  antigravity  pi  emacs
 you@acme:~/projects/acme/src$
 ```
 
@@ -47,7 +47,7 @@ ryad acme -- git status
 
 From any shell in the environment, run the apps like normal programs: `pi`, `antigravity`, `claude`, `claude-desktop`, `codium`, `rstudio`, `emacs`, `firefox`, or anything else installed in the image. The banner of each new shell lists the ones its image has, and `ryad apps` lists them all, with the commands they add. To add or remove apps, see [Choose the apps](customization.md#choose-the-apps).
 
-**GUI apps stay in the foreground** of the terminal you start them from, until their window is closed. This includes `codium`, which normally returns straight away: here it stays in the foreground so that the [one-instance-per-profile lock](profiles.md#sharing-a-profile-between-environments) is held while it runs. To get the terminal back, use `antigravity &`.
+**GUI apps stay in the foreground** of the terminal you start them from, until their window is closed. This includes `codium`, which normally returns straight away: here it stays in the foreground so that the [one-instance-per-profile lock](profiles.md#sharing-a-profile-between-environments) is held while it runs. To get the terminal back, use `codium . &`.
 
 **Starting an app from the host.** Use `--detach` (`-d`) to start an app in the background and get the terminal back:
 

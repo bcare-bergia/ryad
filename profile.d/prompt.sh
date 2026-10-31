@@ -5,6 +5,7 @@
 # Elements: user host dir. Colors: black red green yellow blue magenta cyan
 # white, bright-<color>, with an optional bold- prefix; default; or raw SGR
 # codes such as 01;32. Elements left out keep Ubuntu's colors.
+# shellcheck shell=bash
 [ -n "${PS1:-}" ] && [ -n "${RYAD_PROMPT_COLORS:-}" ] || return 0
 
 __cs_sgr() { # <color>: print its SGR code

@@ -10,7 +10,7 @@ Apps don't update themselves inside the sandbox: they are installed system-wide,
 ## The upgrade cycle
 
 ```bash
-ryad build --check            # compare the built image with the latest releases
+ryad build --check            # latest versions, and whether the image's Claude apps are current
 ryad build                    # rebuild; only layers whose version changed are rebuilt
 ryad list                     # environments on an older build are marked with *
 ryad recreate --outdated      # move them onto the new image (one confirmation for all)
@@ -54,7 +54,7 @@ From a checkout, update it, then make and install a new bundle:
 
 ```bash
 ./bundle.sh
-install -m 0755 dist/ryad ~/.local/bin/ryad
+install -D -m 0755 dist/ryad ~/.local/bin/ryad
 ryad --version
 ```
 

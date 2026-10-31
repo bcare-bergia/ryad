@@ -50,12 +50,12 @@ The release also has the plain `ryad` file, if you'd rather copy it onto your `P
 ### From this repository
 
 ```bash
-./bundle.sh                                  # writes dist/ryad
-install -m 0755 dist/ryad ~/.local/bin/ryad
-ryad --version                               # ryad 0.1.0-3-g95356cf (4e7c8584977f, bundled 2026-10-30)
+./bundle.sh                                     # writes dist/ryad
+install -D -m 0755 dist/ryad ~/.local/bin/ryad
+ryad --version                                  # ryad 0.1.2 (ea426ade523b, bundled 2026-10-30)
 ```
 
-The bundled `dist/ryad` carries the files the image is built from (the Dockerfile, `apps/`, `packages/`…), so `ryad build` works from anywhere without this repository. The version is the release it comes from, from `git describe` (`0.1.0`, or `0.1.0-3-g95356cf` three commits later), followed by a short hash of the bundle's contents: two copies with the same hash are identical.
+The bundled `dist/ryad` carries the files the image is built from (the Dockerfile, `apps/`, `packages/`…), so `ryad build` works from anywhere without this repository. The version is the release it comes from, from `git describe` (`0.1.2`, or `0.1.2-3-g1a2b3c4` three commits later), followed by a short hash of the bundle's contents: two copies with the same hash are identical.
 
 After changing anything in the repository, run `./bundle.sh` again and reinstall.
 
@@ -88,14 +88,14 @@ This creates an environment named after the folder ("acme"), with the profile `d
 
 | Command | App |
 |---|---|
-| `pi` | Pi, a terminal coding agent that works with most model providers |
-| `antigravity` | Google Antigravity |
 | `claude` | Claude Code, in the terminal |
 | `claude-desktop` | Claude Desktop |
+| `firefox` | Firefox |
 | `codium` | VSCodium (`codium .` opens the workspace) |
 | `rstudio` | RStudio |
+| `antigravity` | Google Antigravity |
+| `pi` | Pi, a terminal coding agent that works with most model providers |
 | `emacs` | Emacs |
-| `firefox` | Firefox |
 
 Use any of them, or none: the environment is a normal Linux shell. `ryad apps` lists the apps; you can [remove some, or add your own](customization.md#choose-the-apps).
 

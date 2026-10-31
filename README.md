@@ -27,7 +27,7 @@ I work on quite a few different things: my own projects, and also professional p
 - the **same tools everywhere**, set up once, not reinstalled for every project;
 - each project kept **properly apart**. Client X's code, accounts and API keys have no business being near client Y's, and neither should be anywhere near my personal stuff.
 
-On top of that, LLM-powered tools have a tendency to overflow outside of their expected playground : they run commands, install packages, edit files. That's what makes them useful, but I'd rather they did it somewhere other than my whole home directory.
+On top of that, LLM-powered tools have a tendency to overflow outside of their expected playground: they run commands, install packages, edit files. That's what makes them useful, but I'd rather they did it somewhere other than my whole home directory.
 
 So ryad gives each project its own **environment**, a small Podman container you step into from a terminal. Every environment is built from the same image, so your tools are always there. And each one only sees two things:
 
@@ -48,9 +48,9 @@ And you can run apps with graphical interfaces like Claude Desktop, VS Codium, F
       one image, the same tools in every room: pi, claude, codium, git…
  ┌──────────────────────┬──────────────────────┬──────────────────────┬──────────────────────┐
  │ environment "blog"   │ environment "x-api"  │ environment "x-site" │ environment "y-robot"│
- │ ~/perso/blog         │ ~/client_x/api       │ ~/client_x/sit e     │ ~/client_y/robot     │
+ │ ~/perso/blog         │ ~/client_x/api       │ ~/client_x/site      │ ~/client_y/robot     │
  │ profile: personal    │ profile: client_x    │ profile: client_x    │ profile: client_y    │
- └──────────────────────┴──────────────────────┴─────────────────────────────────────────────┘
+ └──────────────────────┴──────────────────────┴──────────────────────┴──────────────────────┘
    none of them sees ~/.ssh, ~/Documents, or the others
 ```
 
@@ -70,15 +70,16 @@ It doesn't matter which model or vendor you use. A few tools come preinstalled, 
 | **Browser** | Firefox, for sign-in pages and anything else that needs one |
 | **Toolchains** | git, Python, Node.js, R, build-essential, ripgrep… |
 
-GUI apps started inside the sandbox open on your normal Wayland or X11 desktop. Every app except Claude Code and Claude Desktop can be left out (`ryad apps rm rstudio`), and you can [add your own](docs/customization.md#add-a-third-party-app) (`ryad apps new mytool`). [Customization](docs/customization.md#ways-to-add-a-tool) compares the ways to add a tool.
+GUI apps started inside the sandbox open on your normal Wayland or X11 desktop. Every app except Claude Code and Claude Desktop can be left out (`ryad apps rm rstudio`), and you can [add your own](docs/customization.md#add-a-third-party-app) (`ryad apps new mytool`). Emacs is an apt package rather than an app, so it is dropped through [its package list](docs/customization.md#choose-the-apps) instead. [Customization](docs/customization.md#ways-to-add-a-tool) compares the ways to add a tool.
 
 ## Try it
 
 > [!WARNING]
-> ⚠️ **Before you trust ryad with anything:** ⚠️
+> **Before you trust ryad with anything:**
 >
 > - **Yes, it was almost entirely vibe coded**, written with LLM coding agents and only lightly reviewed. Expect bugs and rough edges. Beware.
 > - **I'm not a security expert, and ryad hasn't been audited.** It reduces what your tools can reach; it isn't a hardened security boundary. Read the [Security model](docs/security.md) for what it doesn't isolate. Beware.
+> - **On an X11 desktop, GUI apps are not contained.** Every environment is handed your X11 cookie, so anything running in one can read the keystrokes and screen contents of every other X11 window, inside or outside ryad. Wayland keeps clients apart; X11 never has. `--display=wayland` reduces X11 use but doesn't remove the access. See [Display](docs/security.md#display).
 > - It comes **as is, without any warranty**, and you use it at your own risk. ryad is a personal project: my company, BERGIA Solutions, doesn't publish, distribute or support it, and accepts no liability for it. See [License](#license).
 
 
@@ -165,6 +166,7 @@ ryad acme -- pi -p "list the TODOs in this repository"
 **Add your own tools to the image:**
 
 ```bash
+mkdir -p ~/.config/ryad/packages
 echo "postgresql-client" >> ~/.config/ryad/packages/50-mine.list
 ryad build && ryad recreate acme
 ```

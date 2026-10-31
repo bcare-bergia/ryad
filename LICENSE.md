@@ -1,11 +1,11 @@
 # License
 
-**ryad** · Copyright (c) 2026 Bertrand Care
+**ryad** · Copyright (c) 2026 Bertrand Caré
 
 ryad is licensed under the Sustainable Use License, Version 1.0, below.
 
 > **Note (not part of the license terms).** ryad is a personal project of
-> Bertrand Care. BERGIA Solutions SASU, the author's company, is not the
+> Bertrand Caré. BERGIA Solutions SASU, the author's company, is not the
 > licensor: it does not publish, distribute or support ryad, makes no warranty
 > about it, and accepts no liability in relation to it.
 >

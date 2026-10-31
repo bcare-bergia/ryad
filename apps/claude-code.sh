@@ -5,6 +5,7 @@
 # @description Claude Code, Anthropic's coding agent (terminal)
 # @commands claude
 # @needs firefox
+# shellcheck shell=bash
 . "$(dirname "$0")/lib.sh"
 
 BASE=https://downloads.claude.ai/claude-code-releases

@@ -4,6 +4,7 @@
 # @description Claude Desktop, Anthropic's desktop app
 # @commands claude-desktop
 # @needs firefox
+# shellcheck shell=bash
 . "$(dirname "$0")/lib.sh"
 
 KEY=/usr/share/keyrings/claude-desktop-archive-keyring.asc
